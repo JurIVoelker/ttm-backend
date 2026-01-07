@@ -21,12 +21,12 @@ RUN bunx --bun prisma generate
 ENV NODE_ENV=production
 RUN bun run build:file
 
-FROM gcr.io/distroless/static-debian12 AS release
+FROM base AS release
 WORKDIR /app
 
-COPY --from=prerelease /app/out/server .
+COPY --from=prerelease --chown=bun:bun /app/out/server .
 
-USER nonroot:nonroot
-
+USER bun
 EXPOSE 3000/tcp
+
 ENTRYPOINT ["./server"]
