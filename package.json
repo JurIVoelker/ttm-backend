@@ -6,8 +6,8 @@
     "db:migrate": "bunx --bun prisma migrate dev && bunx --bun prisma generate",
     "db:wait": "wait-port localhost:5432",
     "lint": "eslint",
-    "deploy:file": "bun build src/index.ts --target=bun --compile --outfile=out/server --minify --sourcemap",
-    "deploy": "bun build src/index.ts --target=bun --outdir=out --minify --sourcemap"
+    "build:file": "bun --bun build src/index.ts --target=bun --compile --outfile=out/server --minify --sourcemap",
+    "build": "bun build src/index.ts --target=bun --outdir=out --minify --sourcemap"
   },
   "dependencies": {
     "@hono/eslint-config": "^2.0.5",
@@ -25,6 +25,7 @@
     "prisma": "^7.2.0",
     "slugify": "^1.6.6",
     "wait-port": "^1.1.0",
+    "web-push": "^3.6.7",
     "zod": "^4.3.4"
   },
   "devDependencies": {
