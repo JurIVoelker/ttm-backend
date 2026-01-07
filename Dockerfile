@@ -14,6 +14,10 @@ WORKDIR /app
 COPY --from=install /app/node_modules ./node_modules
 COPY . .
 
+# Generate Prisma client and run migrations
+RUN bunx --bun prisma migrate deploy
+RUN bunx --bun prisma generate
+
 ENV NODE_ENV=production
 RUN bun run build:file
 
