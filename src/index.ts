@@ -9,6 +9,7 @@ import { playerController } from "./controller/player-controller";
 import { adminController } from "./controller/admin-controller";
 import { loggerMiddleware } from "./lib/logger";
 import { notificationController } from "./controller/notification-controller";
+import { FRONTEND_URL } from "./config";
 
 export const app = new Hono().basePath("/api");
 app.use(loggerMiddleware);
@@ -16,7 +17,7 @@ app.use(loggerMiddleware);
 app.use(
   "/*",
   cors({
-    origin: "http://localhost:3000", // TODO adjust for production
+    origin: FRONTEND_URL,
     allowMethods: ["GET", "POST", "OPTIONS", "DELETE"],
     allowHeaders: ["Content-Type", "Authorization"],
     credentials: true,

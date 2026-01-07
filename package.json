@@ -2,12 +2,12 @@
   "name": "ttm-backend",
   "scripts": {
     "dev": "bun dev:db && bun --bun run  --hot src/index.ts",
-    "dev:db": "bun --bun src/scripts/dev/start-db.ts && bun --bun db:wait &&  bun --bun run src/scripts/dev/seed-db.ts",
+    "dev:db": "bun --bun src/scripts/dev/start-db.ts && bun --bun db:wait && bun db:seed",
     "db:migrate": "bunx --bun prisma migrate dev && bunx --bun prisma generate",
     "db:wait": "wait-port localhost:5432",
+    "db:seed": "bun --bun run src/scripts/dev/seed-db.ts",
     "lint": "eslint",
-    "build:file": "bun --bun build src/index.ts --target=bun --compile --outfile=out/server --minify --sourcemap",
-    "build": "bun build src/index.ts --target=bun --outdir=out --minify --sourcemap"
+    "build:file": "bun --bun build src/index.ts --target=bun --compile --outfile=out/server --minify --sourcemap"
   },
   "dependencies": {
     "@hono/eslint-config": "^2.0.5",
