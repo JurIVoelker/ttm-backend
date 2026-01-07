@@ -2,7 +2,7 @@ import { MiddlewareHandler } from "hono";
 import { jwt } from "hono/jwt";
 import { HTTPException } from "hono/http-exception";
 import { jwtPayload, Role } from "../types/auth";
-import { JWT_SECRET } from "../config";
+import { BASE_URL, JWT_SECRET } from "../config";
 import { sign } from "hono/jwt";
 import { hashSync } from "bcryptjs";
 import { OAuth2Client } from "oslo/oauth2";
@@ -67,7 +67,7 @@ export const googleOAuth2Client = new OAuth2Client(
   "https://accounts.google.com/o/oauth2/v2/auth",
   "https://oauth2.googleapis.com/token",
   {
-    redirectURI: "http://localhost:8080/api/auth/login/google/callback",
+    redirectURI: BASE_URL + "/api/auth/login/google/callback",
   },
 );
 
