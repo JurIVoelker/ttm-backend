@@ -27,6 +27,6 @@ WORKDIR /app
 COPY --from=prerelease --chown=bun:bun /app/out/server .
 
 USER bun
-EXPOSE 3000/tcp
+EXPOSE 8080/tcp
 
 ENTRYPOINT ["./server"]
