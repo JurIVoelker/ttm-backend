@@ -2,7 +2,7 @@ import { MiddlewareHandler } from "hono";
 import { jwt } from "hono/jwt";
 import { HTTPException } from "hono/http-exception";
 import { jwtPayload, Role } from "../types/auth";
-import { BASE_URL, JWT_SECRET } from "../config";
+import { BASE_URL, GOOGLE_CLIENT_ID, JWT_SECRET } from "../config";
 import { sign } from "hono/jwt";
 import { hashSync } from "bcryptjs";
 import { OAuth2Client } from "oslo/oauth2";
@@ -63,7 +63,7 @@ export const hashPassword = (password: string) => {
 };
 
 export const googleOAuth2Client = new OAuth2Client(
-  Bun.env.GOOGLE_CLIENT_ID || "",
+  GOOGLE_CLIENT_ID,
   "https://accounts.google.com/o/oauth2/v2/auth",
   "https://oauth2.googleapis.com/token",
   {

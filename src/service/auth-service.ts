@@ -17,7 +17,7 @@ import { TeamService } from "./team-service";
 import { Context } from "hono";
 import { generateState } from "oslo/oauth2";
 import { getCookie, setCookie } from "hono/cookie";
-import { NODE_ENV } from "../config";
+import { GOOGLE_CLIENT_SECRET, NODE_ENV } from "../config";
 
 const leaderService = new LeaderService();
 const adminService = new AdminService();
@@ -239,13 +239,14 @@ export class AuthService {
     const googleOAuth2State = getCookie(c, "google_oauth2_state");
 
     if (!googleOAuth2State || !state || googleOAuth2State !== state) {
+      logger.warn("Google OAuth2 state mismatch or missing.");
       throw new HTTPException(401, { message: "Unauthorized" });
     }
 
     const { access_token } = await googleOAuth2Client.validateAuthorizationCode(
       code,
       {
-        credentials: Bun.env.GOOGLE_CLIENT_SECRET,
+        credentials: GOOGLE_CLIENT_SECRET,
         authenticateWith: "request_body",
       },
     );

@@ -1,8 +1,9 @@
 import slugify from "slugify";
 import z from "zod";
 import { CREATE_MATCH_SCHEMA } from "../../validation/match-schema";
+import { TEST_DEFAULT_EMAIL } from "../../config";
 
-export const defaultEmail = Bun.env.TEST_DEFAULT_EMAIL;
+export const defaultEmail = TEST_DEFAULT_EMAIL;
 
 if (!defaultEmail)
   throw new Error("TEST_DEFAULT_EMAIL is not set in environment variables");

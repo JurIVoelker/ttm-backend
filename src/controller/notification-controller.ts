@@ -1,16 +1,17 @@
 import { Hono } from "hono";
-import { access } from "../lib/auth";
+import { access, jwtMiddleware } from "../lib/auth";
 import { validateJSON, validatePath } from "../lib/validate";
 import { MatchService } from "../service/match-service";
 import logger from "../lib/logger";
 import { POST_SUBSCRIBE_NOTIFICATION_SCHEMA } from "../validation/notification-schema";
+import { NotificationService } from "../service/notification-service";
 
 // Config
 export const notificationController = new Hono();
-// notificationController.use(jwtMiddleware);
+notificationController.use(jwtMiddleware);
 
 // Services
-const matchService = new MatchService();
+const notificationService = new NotificationService();
 
 // Routes
 notificationController.post(
@@ -20,6 +21,7 @@ notificationController.post(
   async (c) => {
     const sub = c.get("json");
     logger.info({ sub }, "Subscribing to notifications");
+    await notificationService.subscribe({ subscription: sub });
     return c.json({});
   },
 );

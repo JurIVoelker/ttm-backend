@@ -183,19 +183,13 @@ authController.post("/register", validateJSON(REGISTER_SCHEMA), async (c) => {
 authController.post("/refresh", async (c) => {
   const rawJwt = c.req.header("Authorization")?.replace("Bearer ", "");
 
-  console.log("RAW JWT:", rawJwt);
-
   if (!rawJwt) {
     throw new HTTPException(401, { message: "Unauthorized" });
   }
 
   const jwtPayload = decode(rawJwt).payload as jwtPayload;
 
-  console.log("JWT PAYLOAD:", jwtPayload);
-
   const refreshToken = getCookie(c, "refreshToken");
-
-  console.log("REFRESH TOKEN:", refreshToken);
 
   if (!refreshToken) throw new HTTPException(401, { message: "Unauthorized" });
   if (
