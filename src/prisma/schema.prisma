@@ -1,0 +1,150 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "./generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum MatchType {
+  REGULAR
+  CUP
+}
+
+enum TeamType {
+  DAMEN
+  ERWACHSENE
+  JUGEND_12
+  JUGEND_15
+  JUGEND_19
+  MADCHEN_12
+  MADCHEN_15
+  MADCHEN_19
+}
+
+enum Availability {
+  AVAILABLE
+  UNAVAILABLE
+  UNKNOWN
+  NOT_RESPONDED
+}
+
+model Admin {
+  id       String @id @default(cuid())
+  email    String @unique
+  fullName String
+}
+
+model TeamLeader {
+  id       String @id @default(cuid())
+  email    String @unique
+  fullName String
+  team     Team[]
+}
+
+model Player {
+  id       String @id @default(cuid())
+  fullName String
+
+  positions              PlayerPosition[]
+  matches                Match[]
+  matchAvailabilityVotes MatchAvailabilityVote[]
+  teams                  Team[]
+}
+
+model PlayerPosition {
+  id        String   @id @default(cuid())
+  teamIndex Int
+  position  Int
+  teamType  TeamType
+
+  player   Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  playerId String
+}
+
+model Team {
+  slug        String   @id @unique
+  name        String
+  groupIndex  Int
+  type        TeamType
+  inviteToken String   @unique
+
+  members Player[]
+  matches Match[]
+  leaders TeamLeader[]
+}
+
+model Match {
+  id         String    @id @default(cuid())
+  time       DateTime
+  enemyName  String
+  isHomeGame Boolean
+  location   Location?
+  type       MatchType @default(REGULAR)
+
+  lineup                 Player[]
+  matchAvailabilityVotes MatchAvailabilityVote[]
+  teamSlug               String
+  team                   Team                    @relation(fields: [teamSlug], references: [slug], onDelete: Cascade)
+}
+
+model MatchAvailabilityVote {
+  availability Availability @default(UNKNOWN)
+
+  match    Match  @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  matchId  String
+  player   Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  playerId String
+
+  @@id([matchId, playerId])
+}
+
+model Location {
+  id            String @id @default(cuid())
+  matchId       String @unique
+  hallName      String
+  streetAddress String
+  city          String
+
+  match Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+}
+
+model UserCredentials {
+  id           String @id @default(cuid())
+  email        String @unique
+  passwordHash String
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userEmail String
+  expiresAt DateTime
+  issuedAt  DateTime @default(now())
+}
+
+model PasswordReset {
+  id        String   @id @default(cuid())
+  token     String
+  email     String
+  expiresAt DateTime
+}
+
+model EmailsSent {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  email     String
+  subject   String
+  body      String
+}
+
+model HiddenMatch {
+  id String @id @default(cuid())
+}
+
+model Settings {
+  id            String  @id @default(cuid())
+  includeRRSync Boolean @default(false)
+  autoSync      Boolean @default(false)
+}

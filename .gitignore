@@ -1,0 +1,6 @@
+out/
+node_modules/
+bruno
+.git
+.env*
+src/prisma/generated/
