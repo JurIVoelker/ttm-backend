@@ -2,6 +2,7 @@ import { dropAll } from "../../lib/db";
 import { AdminService } from "../../service/admin-service";
 import { AuthService } from "../../service/auth-service";
 import { LeaderService } from "../../service/leader-service";
+import { MatchService } from "../../service/match-service";
 import { PlayerService } from "../../service/player-service";
 import { TeamService } from "../../service/team-service";
 import {
@@ -19,6 +20,7 @@ const leaderService = new LeaderService();
 const adminService = new AdminService();
 const authService = new AuthService();
 const playerService = new PlayerService();
+const matchService = new MatchService();
 
 (async () => {
   await dropAll();
@@ -75,6 +77,47 @@ const playerService = new PlayerService();
 
   await playerService.addToTeam(player.id, defaultPlayer.teamSlug);
   await playerService.addToTeam(player2.id, defaultPlayer.teamSlug);
+
+  await matchService.create({
+    data: {
+      time: new Date(
+        new Date().getTime() + 7 * 24 * 60 * 60 * 1000,
+      ).toISOString(),
+      location: {
+        city: "Berlin",
+        hallName: "Sporthalle Mitte",
+        streetAddress: "Musterstraße 1",
+      },
+      isHomeGame: true,
+      enemyName: "FC Beispiel",
+      type: "REGULAR",
+    },
+    teamSlug: team.slug,
+  });
+
+  const match = await matchService.create({
+    data: {
+      time: new Date(
+        new Date().getTime() + 7 * 24 * 60 * 60 * 1000,
+      ).toISOString(),
+      location: {
+        city: "Berlin",
+        hallName: "Sporthalle Zentrum",
+        streetAddress: "Musterstraße 2",
+      },
+      isHomeGame: false,
+      enemyName: "FC Beispiel 2",
+      type: "CUP",
+    },
+    teamSlug: team.slug,
+  });
+
+  await matchService.vote({
+    availability: "AVAILABLE",
+    matchId: match.id,
+    playerId: player.id,
+    teamSlug: defaultPlayer.teamSlug,
+  });
 
   console.log("Database seeded.");
   process.exit(0);
