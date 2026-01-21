@@ -19,10 +19,16 @@ export class MatchService {
         cause: `Team with slug "${teamSlug}" does not exist`,
       });
 
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
     const matches = await prisma.match.findMany({
       where: {
         team: {
           slug: teamSlug,
+        },
+        time: {
+          gte: today,
         },
       },
       include: {
@@ -42,6 +48,9 @@ export class MatchService {
             },
           },
         },
+      },
+      orderBy: {
+        time: "asc",
       },
     });
 
