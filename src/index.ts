@@ -18,7 +18,7 @@ app.use(
   "/*",
   cors({
     origin: FRONTEND_URL,
-    allowMethods: ["GET", "POST", "OPTIONS", "DELETE"],
+    allowMethods: ["GET", "POST", "OPTIONS", "DELETE", "PUT"],
     allowHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   }),
