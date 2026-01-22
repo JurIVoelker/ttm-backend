@@ -85,6 +85,8 @@ export class MatchService {
       },
       include: {
         location: true,
+        matchAvailabilityVotes: true,
+        lineup: true,
       },
     });
 

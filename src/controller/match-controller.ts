@@ -5,7 +5,6 @@ import {
   validateJSON,
   validatePath,
 } from "../lib/validate";
-import { TeamService } from "../service/team-service";
 import { MatchService } from "../service/match-service";
 import {
   POST_LINEUP_SCHEMA,
@@ -15,7 +14,6 @@ import {
 } from "../validation/team-schema";
 import {
   CREATE_MATCH_SCHEMA,
-  MATCH_ID_PATH,
   UPDATE_MATCH_SCHEMA,
 } from "../validation/match-schema";
 import { HTTPException } from "hono/http-exception";
@@ -88,7 +86,7 @@ matchController.put(
       matchId,
       teamSlug,
     );
-    
+
     if (!matchBelongsToTeam) {
       throw new HTTPException(403, {
         message: "Match does not belong to the given team",
