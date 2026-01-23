@@ -62,6 +62,23 @@ export class PlayerService {
     return Boolean(exists);
   }
 
+  public async isOfType({
+    playerId,
+    teamType,
+  }: {
+    playerId: string;
+    teamType: TeamType;
+  }) {
+    const isOfType = await prisma.playerPosition.findFirst({
+      where: {
+        playerId,
+        teamType,
+      },
+    });
+
+    return Boolean(isOfType);
+  }
+
   public async findByFullName(fullName: string) {
     return await prisma.player.findFirst({
       where: { fullName },

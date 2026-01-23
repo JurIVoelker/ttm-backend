@@ -34,20 +34,7 @@ export class MatchService {
       include: {
         location: true,
         matchAvailabilityVotes: true,
-        lineup: {
-          where: {
-            positions: {
-              some: {
-                AND: {
-                  teamType: targetTeam.type,
-                  teamIndex: {
-                    lte: targetTeam.groupIndex,
-                  },
-                },
-              },
-            },
-          },
-        },
+        lineup: true
       },
       orderBy: {
         time: "asc",
@@ -57,21 +44,24 @@ export class MatchService {
     const playerPositions = await prisma.playerPosition.findMany({
       where: {
         teamType: targetTeam.type,
-        teamIndex: {
-          lte: targetTeam.groupIndex,
-        },
-      },
-      orderBy: {
-        position: "asc",
-      },
+        OR: [{
+          teamIndex: {
+            lte: targetTeam.groupIndex,
+          },
+        }, {
+          playerId: { in: matches.flatMap(match => match.lineup.map(player => player.id)) }
+        }]
+      }
     });
 
     const matchesWithSortedLineup = matches.map((match) => ({
       ...match,
       lineup: match.lineup.sort((a, b) => {
-        const posA = playerPositions.findIndex((pp) => pp.playerId === a.id);
-        const posB = playerPositions.findIndex((pp) => pp.playerId === b.id);
-        return posA - posB;
+        const posA = playerPositions.find((pp) => pp.playerId === a.id);
+        const posB = playerPositions.find((pp) => pp.playerId === b.id);
+        const priorityA = (posA?.teamIndex || 0) * 1000 + (posA?.position || 0);
+        const priorityB = (posB?.teamIndex || 0) * 1000 + (posB?.position || 0);
+        return priorityA - priorityB;
       }),
     }));
 
@@ -210,6 +200,51 @@ export class MatchService {
   }
 
   public async matchBelongsToTeamAndPlayer({
+    matchId,
+    teamSlug,
+    playerId,
+  }: {
+    matchId: string;
+    teamSlug: string;
+    playerId: string;
+  }) {
+    const match = await prisma.match.findUnique({
+      where: {
+        id: matchId,
+        team: {
+          slug: teamSlug,
+          members: {
+            some: {
+              id: playerId,
+            },
+          },
+        },
+      },
+    });
+
+    return Boolean(match);
+  }
+
+
+  public async matchBelogsToTeam({
+    matchId,
+    teamSlug,
+  }: {
+    matchId: string;
+    teamSlug: string;
+  }) {
+    const match = await prisma.match.findUnique({
+      where: {
+        id: matchId,
+        team: {
+          slug: teamSlug,
+        },
+      },
+    });
+
+    return Boolean(match);
+  }
+  public async playerBelogsToType({
     matchId,
     teamSlug,
     playerId,

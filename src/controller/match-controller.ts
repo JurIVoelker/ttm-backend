@@ -19,6 +19,8 @@ import {
 import { HTTPException } from "hono/http-exception";
 import { jwtPayload } from "../types/auth";
 import logger from "../lib/logger";
+import { PlayerService } from "../service/player-service";
+import { TeamService } from "../service/team-service";
 
 // Config
 export const matchController = new Hono();
@@ -26,6 +28,8 @@ matchController.use(jwtMiddleware);
 
 // Services
 const matchService = new MatchService();
+const playerService = new PlayerService();
+const teamService = new TeamService();
 
 // Routes
 matchController.get(
@@ -140,6 +144,7 @@ matchController.post(
       teamSlug,
       playerId: player.id,
     });
+
     if (!permitted) {
       logger.debug(
         `Player with id ${player!.id} is not permitted to vote for match ${matchId} of team ${teamSlug}`,
@@ -169,12 +174,28 @@ matchController.post(
     const { teamSlug, matchId } = c.get("path");
     const { playerIds } = c.get("json");
 
-    for (const playerId of playerIds) {
-      const permitted = await matchService.matchBelongsToTeamAndPlayer({
-        matchId,
-        teamSlug,
-        playerId,
+    const permitted = await matchService.matchBelogsToTeam({
+      matchId,
+      teamSlug,
+    });
+
+    if (!permitted) {
+      logger.error(
+        `Match with id ${matchId} does not belong to team ${teamSlug}`,
+      );
+      throw new HTTPException(403, {
+        message: "You are not permitted to set the lineup for this match",
       });
+    }
+
+    const team = await teamService.getTeamBySlug(teamSlug);
+
+    for (const playerId of playerIds) {
+      const permitted = await playerService.isOfType({
+        playerId,
+        teamType: team.type,
+      });
+
       if (!permitted) {
         logger.error(
           `Player with id ${playerId} is not permitted to be in the lineup for match ${matchId} of team ${teamSlug}`,
