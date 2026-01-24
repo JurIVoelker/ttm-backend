@@ -1,11 +1,11 @@
 import { Hono } from "hono";
-import { validateJSON } from "../lib/validate";
+import { validateJSON, validatePath } from "../lib/validate";
 import {
   JOIN_TEAM_SCHEMA,
   LOGIN_SCHEMA,
   REGISTER_SCHEMA,
 } from "../validation/auth-schema";
-import { generateJWT as signJWT } from "../lib/auth";
+import { getJwtOrThrow, generateJWT as signJWT } from "../lib/auth";
 import { AuthService } from "../service/auth-service";
 import logger from "../lib/logger";
 import { decode, verify } from "hono/jwt";
@@ -14,8 +14,13 @@ import { HTTPException } from "hono/http-exception";
 import { FRONTEND_URL, JWT_SECRET } from "../config";
 import { getCookie } from "hono/cookie";
 import { defaultEmail } from "../test/helpers/test-constants";
+import { TEAM_SLUG_PATH } from "../validation/team-schema";
+import { TeamService } from "../service/team-service";
+import { PlayerService } from "../service/player-service";
 
 const authService = new AuthService();
+const teamService = new TeamService();
+const playerService = new PlayerService();
 
 export const authController = new Hono();
 
@@ -94,6 +99,8 @@ authController.post("/team/join", validateJSON(JOIN_TEAM_SCHEMA), async (c) => {
 
   const existingJwt = c.req.header("Authorization")?.replace("Bearer ", "");
   let payload: jwtPayload | null = null;
+
+  console.log({ playerId, inviteToken, existingJwt })
 
   if (existingJwt) {
     try {
@@ -208,4 +215,20 @@ authController.post("/refresh", async (c) => {
   await authService.setRefreshTokenCookie(c, newRefreshToken);
 
   return c.json({ jwt });
+});
+
+authController.get("/inviteToken/players/:teamSlug", validatePath(TEAM_SLUG_PATH), async (c) => {
+  const { teamSlug } = c.get("path");
+  // console.log({ teamSlug });
+  const inviteToken = getJwtOrThrow(c);
+  const validInviteToken = await teamService.getInviteToken(teamSlug);
+
+  // console.log({ inviteToken, validInviteToken });
+  if (inviteToken !== validInviteToken) {
+    throw new HTTPException(403, { message: "Forbidden" });
+  }
+
+  const players = await playerService.findByTeamSlug(teamSlug);
+
+  return c.json(players);
 });

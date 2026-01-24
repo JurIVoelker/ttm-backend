@@ -1,5 +1,12 @@
 import { $ } from "bun"
 
+try {
+  await $`docker info`.quiet()
+} catch {
+  console.error("Docker is not running. Please start Docker and try again.")
+  process.exit(1)
+}
+
 const stdout = (await $`docker ps -a`.quiet()).text()
 const dbContainer = stdout.split("\n").find(line => line.includes("ttm-postgres"));
 

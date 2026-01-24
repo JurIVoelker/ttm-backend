@@ -6,6 +6,7 @@ import { BASE_URL, GOOGLE_CLIENT_ID, JWT_SECRET } from "../config";
 import { sign } from "hono/jwt";
 import { hashSync } from "bcryptjs";
 import { OAuth2Client } from "oslo/oauth2";
+import { Context } from "hono/jsx";
 
 export const jwtMiddleware = jwt({
   secret: JWT_SECRET,
@@ -85,3 +86,16 @@ export const getRandomString = (length: number) =>
   Array.from(crypto.getRandomValues(new Uint8Array(length)))
     .map((b) => b.toString(36))
     .join("");
+
+
+// @ts-expect-error
+export const getJwtOrThrow = (c: Context) => {
+  const authHeader = c.req.header("Authorization");
+  const token = authHeader?.startsWith("Bearer ") ? authHeader.replace("Bearer ", "") : authHeader
+  console.log({ authHeader })
+  if (!token) {
+    throw new HTTPException(401, { message: "Unauthorized" });
+  }
+
+  return token as string;
+};
