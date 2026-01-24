@@ -17,12 +17,21 @@ import { defaultEmail } from "../test/helpers/test-constants";
 import { TEAM_SLUG_PATH } from "../validation/team-schema";
 import { TeamService } from "../service/team-service";
 import { PlayerService } from "../service/player-service";
+import { rateLimiter } from "hono-rate-limiter";
 
 const authService = new AuthService();
 const teamService = new TeamService();
 const playerService = new PlayerService();
 
 export const authController = new Hono();
+
+authController.use(
+  rateLimiter({
+    windowMs: 10 * 60 * 1000,
+    limit: 20,
+    keyGenerator: (c) => c.req.header("x-forwarded-for") ?? "",
+  })
+);
 
 authController.post("/login", async (c) => {
   const jwt = await signJWT({

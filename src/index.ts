@@ -10,6 +10,7 @@ import { adminController } from "./controller/admin-controller";
 import { loggerMiddleware } from "./lib/logger";
 import { notificationController } from "./controller/notification-controller";
 import { FRONTEND_URL } from "./config";
+import { rateLimiter } from "hono-rate-limiter";
 
 export const app = new Hono().basePath("/api");
 app.use(loggerMiddleware);
@@ -22,6 +23,14 @@ app.use(
     allowHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   }),
+);
+
+app.use(
+  rateLimiter({
+    windowMs: 60 * 60 * 1000,
+    limit: 1000,
+    keyGenerator: (c) => c.req.header("x-forwarded-for") ?? "",
+  })
 );
 
 app.get("/health", (c) => c.json({ status: "ok" }));

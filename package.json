@@ -18,6 +18,7 @@
     "bcryptjs": "^3.0.3",
     "date-fns": "^4.1.0",
     "hono": "^4.11.3",
+    "hono-rate-limiter": "^0.5.3",
     "jsonwebtoken": "^9.0.3",
     "oslo": "^1.2.1",
     "pg": "^8.16.3",
