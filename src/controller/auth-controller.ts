@@ -221,7 +221,7 @@ authController.post("/refresh", async (c) => {
   const excludePlayer = Boolean(c.req.query("excludePlayer"));
 
   let playerId: string | undefined = undefined;
-  if (await playerService.exists(player?.id!) && !excludePlayer) {
+  if (player?.id && await playerService.exists(player?.id) && !excludePlayer) {
     playerId = player?.id;
   }
 
