@@ -218,7 +218,14 @@ authController.post("/refresh", async (c) => {
   const { email } = jwtPayload.admin ?? jwtPayload.leader!;
   const { player } = jwtPayload;
 
-  const jwt = await authService.getJwtRelaxed(email, player?.id);
+  const excludePlayer = Boolean(c.req.query("excludePlayer"));
+
+  let playerId: string | undefined = undefined;
+  if (await playerService.exists(player?.id!) && !excludePlayer) {
+    playerId = player?.id;
+  }
+
+  const jwt = await authService.getJwtRelaxed(email, playerId);
 
   const newRefreshToken = await authService.createRefreshToken(email);
   await authService.setRefreshTokenCookie(c, newRefreshToken);
