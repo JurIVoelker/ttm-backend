@@ -59,7 +59,7 @@ export class AuthService {
     const refreshTokensDeleted = (
       await prisma.refreshToken.deleteMany({
         where: {
-          OR: [{ userEmail: email }, { expiresAt: { lt: new Date() } }],
+          AND: [{ userEmail: email }, { expiresAt: { lt: new Date(new Date().valueOf() - 30 * 1000) } }],
         },
       })
     ).count;
@@ -79,6 +79,14 @@ export class AuthService {
     });
 
     return token;
+  }
+
+  async verifyRefreshToken(token: string, email: string) {
+    const refreshToken = await prisma.refreshToken.findUnique({
+      where: { token, userEmail: email },
+    });
+
+    return Boolean(refreshToken && refreshToken.expiresAt > new Date());
   }
 
   async setRefreshTokenCookie(c: Context, refreshToken: string) {

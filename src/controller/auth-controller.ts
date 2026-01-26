@@ -218,6 +218,15 @@ authController.post("/refresh", async (c) => {
   const { email } = jwtPayload.admin ?? jwtPayload.leader!;
   const { player } = jwtPayload;
 
+  const refreshTokenValid = await authService.verifyRefreshToken(
+    refreshToken,
+    email,
+  );
+
+  if (!refreshTokenValid) {
+    throw new HTTPException(401, { message: "Unauthorized" });
+  }
+
   const excludePlayer = Boolean(c.req.query("excludePlayer"));
 
   let playerId: string | undefined = undefined;
