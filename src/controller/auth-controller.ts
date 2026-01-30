@@ -94,7 +94,7 @@ authController.get("/login/google/callback", async (c) => {
       { email: user.email },
       "Google login attempt by unauthorized user",
     );
-    throw new HTTPException(403, { message: "Forbidden" });
+    return c.redirect(`${FRONTEND_URL}/login/invalid`);
   }
 
   const refreshToken = await authService.createRefreshToken(user.email);
@@ -256,4 +256,10 @@ authController.get("/inviteToken/players/:teamSlug", validatePath(TEAM_SLUG_PATH
   const players = await playerService.findByTeamSlug(teamSlug);
 
   return c.json(players);
+});
+
+
+authController.post("/logout", async (c) => {
+  const _c = await authService.deleteCookies(c);
+  return _c.json({});
 });

@@ -16,7 +16,7 @@ import { GoogleUserPayload, Role } from "../types/auth";
 import { TeamService } from "./team-service";
 import { Context } from "hono";
 import { generateState } from "oslo/oauth2";
-import { getCookie, setCookie } from "hono/cookie";
+import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import { GOOGLE_CLIENT_SECRET, NODE_ENV } from "../config";
 
 const leaderService = new LeaderService();
@@ -261,5 +261,15 @@ export class AuthService {
 
     const user = (await getGoogleUser(access_token)) as GoogleUserPayload;
     return user;
+  }
+
+  public async deleteCookies(c: Context) {
+    deleteCookie(c, "refreshToken", {
+      httpOnly: true,
+      secure: NODE_ENV === "production",
+      sameSite: "Lax",
+    });
+
+    return c;
   }
 }
