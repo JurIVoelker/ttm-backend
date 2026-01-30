@@ -16,7 +16,7 @@ const adminService = new AdminService()
 
 adminController.get("/admins", access("admin"), async (c) => {
   const admins = await adminService.findMany();
-  return c.json({ admins });
+  return c.json(admins);
 })
 
 adminController.post("/admin", access("admin"), validateJSON(ADD_ADMIN_SCHEMA), async (c) => {
@@ -28,9 +28,9 @@ adminController.post("/admin", access("admin"), validateJSON(ADD_ADMIN_SCHEMA), 
     return c.json({ message: "Admin already exists" }, 400);
   }
 
-  await adminService.create({ email, fullName });
+  const admin = await adminService.create({ email, fullName });
 
   logger.info({ email, fullName }, "Created new admin");
-  return c.json({ message: "Admin added" });
+  return c.json(admin);
 })
 
