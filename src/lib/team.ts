@@ -13,9 +13,9 @@ const getAgeGroup = (teamName: string, teamTypeRaw: "M" | "F") => {
 
   if (teamTypeRaw === "F") {
     switch (age) {
-      case 12: return TeamType.JUGEND_12;
-      case 15: return TeamType.JUGEND_15;
-      case 19: return TeamType.JUGEND_19;
+      case 12: return TeamType.MADCHEN_12;
+      case 15: return TeamType.MADCHEN_15;
+      case 19: return TeamType.MADCHEN_19;
     }
   } else {
     switch (age) {
