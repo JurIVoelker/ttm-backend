@@ -27,7 +27,7 @@ leaderController.get("/leaders/:teamSlug", access("admin"), validatePath(TEAM_SL
 leaderController.get("/leaders", access("admin"), async (c) => {
   //* Get all leaders
   const leaders = await leaderService.findAll();
-  return c.json({ leaders });
+  return c.json(leaders);
 })
 
 leaderController.post("/leader/:teamSlug", access("admin"), validatePath(TEAM_SLUG_PATH), validateJSON(ADD_LEADER_SCHEMA), async (c) => {
