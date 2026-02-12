@@ -16,7 +16,7 @@ export const jwtMiddleware = jwt({
 export const generateJWT = async ({ payload }: { payload: jwtPayload }) => {
   payload.exp = Math.floor(Date.now() / 1000) + 60 * 5;
   payload.iat = Math.floor(Date.now() / 1000);
-  return await sign(payload, JWT_SECRET);
+  return await sign(payload, JWT_SECRET, "HS256");
 };
 
 export const access = (_allowedRoles: Role[] | Role): MiddlewareHandler => {

@@ -113,7 +113,7 @@ authController.post("/team/join", validateJSON(JOIN_TEAM_SCHEMA), async (c) => {
 
   if (existingJwt) {
     try {
-      await verify(existingJwt, JWT_SECRET);
+      await verify(existingJwt, JWT_SECRET, { alg: "HS256" });
       payload = decode(existingJwt).payload as jwtPayload;
     } catch (error) {
       logger.warn(
