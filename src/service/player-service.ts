@@ -256,14 +256,37 @@ export class PlayerService {
         }
       })
 
+      logger.debug(`Deleted existing player positions for team type ${teamType}`);
+
       const newTeamPositions = players
         .flatMap((player) => player.positions.find((p) => p.teamType === teamType))
         .filter((p) => Boolean(p))
         .map((p) => ({ teamIndex: p!.teamIndex, position: p!.position, teamType, playerId: p!.playerId }));
 
       for (const pos of newTeamPositions) {
+
+        const exists = await tx.player.findFirst({
+          where: { OR: [{ id: pos.playerId }, { fullName: players.find(p => p.id === pos.playerId)?.fullName }] },
+        })
+
+        logger.debug(`Checking existence of player with ID ${pos.playerId}: ${exists ? "found" : "not found"}`);
+
+        if (!exists) {
+          logger.debug(`Player with ID ${pos.playerId} does not exist, creating...`);
+          const playerData = players.find((p) => p.id === pos.playerId);
+          if (!playerData) continue;
+          const result = await tx.player.create({
+            data: {
+              fullName: playerData.fullName,
+            }
+          })
+          pos.playerId = result.id;
+          logger.info(`Created new player: ${result.fullName} (ID: ${result.id})`);
+        }
+
         const team = existingTeams.find(t => t.type === pos.teamType && t.groupIndex === pos.teamIndex);
         if (!team) {
+          logger.debug(`Team of type ${pos.teamType} and index ${pos.teamIndex} does not exist, creating...`);
           const result = await tx.team.create({
             data: {
               name: `${translateTeamType(teamType)} ${intToRoman(pos.teamIndex)}`,
