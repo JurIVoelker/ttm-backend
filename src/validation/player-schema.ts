@@ -1,5 +1,6 @@
 import z from "zod";
 import { PlayerService } from "../service/player-service";
+import { TeamType } from "../prisma/generated";
 
 const playerService = new PlayerService();
 
@@ -16,4 +17,17 @@ export const playerIdSchema = z
 
 export const PLAYER_IDS_SCHEMA = z.object({
   playerIds: z.array(playerIdSchema),
+});
+
+
+export const POST_PLAYER_POSITIONS_SCHEMA = z.object({
+  players: z.array(z.object({
+    id: z.string(),
+    fullName: z.string().min(3).max(100),
+    positions: z.array(z.object({
+      teamType: z.enum(TeamType),
+      teamIndex: z.number(),
+      position: z.number(),
+    }).loose()),
+  }))
 });

@@ -1,12 +1,13 @@
 import { Hono } from "hono";
 import { access, jwtMiddleware } from "../lib/auth";
 import { validateJSON, validatePath } from "../lib/validate";
-import { TEAM_SLUG_PATH } from "../validation/team-schema";
+import { TEAM_SLUG_PATH, TEAM_TYPE_PATH } from "../validation/team-schema";
 import { PlayerService } from "../service/player-service";
-import { POST_PLAYER_SCHEMA } from "../validation/player-schema";
+import { POST_PLAYER_POSITIONS_SCHEMA, POST_PLAYER_SCHEMA } from "../validation/player-schema";
 import { LeaderService } from "../service/leader-service";
 import { jwtPayload } from "../types/auth";
 import { HTTPException } from "hono/http-exception";
+import { PlayerWithPositions } from "../types/player";
 
 // Config
 export const playerController = new Hono();
@@ -31,6 +32,17 @@ playerController.get(
     return c.json({ players });
   },
 );
+
+playerController.put("/players/types/positions/:teamType",
+  access(["admin"]),
+  validatePath(TEAM_TYPE_PATH),
+  validateJSON(POST_PLAYER_POSITIONS_SCHEMA),
+  async (c) => {
+    const { players } = c.get("json");
+    const { teamType } = c.get("path");
+    await playerService.updatePositions(players as PlayerWithPositions[], teamType);
+    return c.json({ message: "Player positions updated successfully" });
+  })
 
 playerController.post(
   "/player/:teamSlug",

@@ -1,8 +1,12 @@
+import slugify from "slugify";
 import logger from "../lib/logger";
+import { translateTeamType } from "../lib/team";
 import { Team, TeamType } from "../prisma/generated";
 import { prisma } from "../prisma/prisma";
 import { PlayerWithPositions } from "../types/player";
 import { TeamService } from "./team-service";
+import { intToRoman } from "../lib/roman";
+import { generateInviteToken } from "../lib/auth";
 
 export class PlayerService {
   private teamService = new TeamService();
@@ -238,5 +242,48 @@ export class PlayerService {
     }
 
     return player.teams.map((team) => team.slug);
+  }
+
+  public async updatePositions(players: PlayerWithPositions[], teamType: TeamType) {
+    const txResult = await prisma.$transaction(async (tx) => {
+      const existingTeams = await tx.team.findMany({
+        where: { type: teamType },
+      })
+
+      await tx.playerPosition.deleteMany({
+        where: {
+          teamType: teamType,
+        }
+      })
+
+      const newTeamPositions = players
+        .flatMap((player) => player.positions.find((p) => p.teamType === teamType))
+        .filter((p) => Boolean(p))
+        .map((p) => ({ teamIndex: p!.teamIndex, position: p!.position, teamType, playerId: p!.playerId }));
+
+      for (const pos of newTeamPositions) {
+        const team = existingTeams.find(t => t.type === pos.teamType && t.groupIndex === pos.teamIndex);
+        if (!team) {
+          const result = await tx.team.create({
+            data: {
+              name: `${translateTeamType(teamType)} ${intToRoman(pos.teamIndex)}`,
+              groupIndex: pos.teamIndex,
+              type: teamType,
+              slug: slugify(`${translateTeamType(teamType)} ${intToRoman(pos.teamIndex)}`),
+              inviteToken: generateInviteToken(),
+            }
+          })
+          logger.info(`Created new team: ${result.name}`);
+        }
+      }
+
+      await tx.playerPosition.createMany({
+        data: newTeamPositions,
+      });
+
+      logger.info(`Persisted ${newTeamPositions.length} player positions for team type ${teamType}`);
+    });
+
+    return txResult;
   }
 }

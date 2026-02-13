@@ -1,7 +1,7 @@
 import z from "zod";
 import { TeamService } from "../service/team-service";
 import { validateMatchId } from "./match-schema";
-import { Availability } from "../prisma/generated";
+import { Availability, TeamType } from "../prisma/generated";
 import { playerIdSchema } from "./player-schema";
 
 const teamService = new TeamService();
@@ -29,6 +29,11 @@ export const POST_LINEUP_SCHEMA = z.object({
 
 export const TEAM_SLUG_PATH = z.object({
   teamSlug: validateTeamSlug,
+});
+
+
+export const TEAM_TYPE_PATH = z.object({
+  teamType: z.enum(TeamType),
 });
 
 export const TEAM_SLUG_AND_MATCH_ID_PATH = z.object({
