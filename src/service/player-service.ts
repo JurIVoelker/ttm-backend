@@ -305,6 +305,41 @@ export class PlayerService {
       });
 
       logger.info(`Persisted ${newTeamPositions.length} player positions for team type ${teamType}`);
+
+      // clean up players that are not in the team anymore
+      const faultyPlayersInTeam = await tx.player.findMany({
+        where: {
+          teams: {
+            some: {
+              type: teamType,
+            }
+          },
+          positions: {
+            none: {
+              teamType: teamType,
+            }
+          }
+        },
+        include: {
+          teams: true,
+        }
+      })
+
+      for (const player of faultyPlayersInTeam) {
+        const slug = player.teams.filter(t => t.type === teamType)[0]?.slug;
+        if (!slug) continue;
+        await tx.team.update({
+          where: {
+            slug
+          },
+          data: {
+            members: {
+              disconnect: { id: player.id },
+            }
+          }
+        })
+        logger.info(`Removed player ${player.fullName} from team ${slug} due to missing position`);
+      }
     });
 
     return txResult;
