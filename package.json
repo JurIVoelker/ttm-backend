@@ -7,7 +7,7 @@
     "db:wait": "wait-port localhost:5432",
     "db:seed": "bun --bun run src/scripts/dev/seed-db.ts",
     "lint": "eslint",
-    "build:file": "bun --bun build src/index.ts --target=bun --compile --outfile=out/server --minify --sourcemap"
+    "build:file": "bun --bun build src/entrypoint.ts --target=bun --compile --outfile=out/server --minify --sourcemap"
   },
   "dependencies": {
     "@hono/eslint-config": "^2.0.5",
