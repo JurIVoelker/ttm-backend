@@ -91,7 +91,12 @@ export class TeamService {
   }
 
   public async getTeams() {
-    const teams = await prisma.team.findMany();
+    const teams = await prisma.team.findMany({
+      orderBy: {
+        type: "asc",
+        groupIndex: "asc",
+      }
+    });
     return teams.map((team) => this.toDTO(team));
   }
 
