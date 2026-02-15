@@ -31,3 +31,9 @@ if (
     "VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, or VAPID_PUSH_EMAIL is not set",
   );
 }
+
+export const DISCORD_WEBHOOK_URL = Bun.env.DISCORD_WEBHOOK_URL || "";
+
+if (!DISCORD_WEBHOOK_URL) {
+  console.warn("DISCORD_WEBHOOK_URL is not set, Discord notifications will not work");
+}

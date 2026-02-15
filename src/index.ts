@@ -11,6 +11,7 @@ import { loggerMiddleware } from "./lib/logger";
 import { notificationController } from "./controller/notification-controller";
 import { FRONTEND_URL } from "./config";
 import { rateLimiter } from "hono-rate-limiter";
+import { syncController } from "./controller/sync-controller";
 
 export const app = new Hono().basePath("/api");
 app.use(loggerMiddleware);
@@ -41,6 +42,8 @@ app.route("/", leaderController);
 app.route("/", playerController);
 app.route("/", adminController);
 app.route("/", notificationController);
+app.route("/", syncController);
+
 
 showRoutes(app, {
   colorize: true,
