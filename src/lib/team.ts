@@ -5,9 +5,9 @@ const getAgeGroup = (teamName: string, teamTypeRaw: "M" | "F") => {
   const ageGroup = teamName.split(" ")[1];
   let age = 0;
   switch (ageGroup) {
-    case "U12": age = 12; break;
-    case "U15": age = 15; break;
-    case "U19": age = 19; break;
+    case "12": age = 12; break;
+    case "15": age = 15; break;
+    case "19": age = 19; break;
     default: throw new Error(`Unknown age group in team name: ${teamName}`);
   }
 
@@ -58,17 +58,17 @@ export const translateTeamType = (type: TeamType): string => {
     case "ERWACHSENE":
       return "Erwachsene";
     case "JUGEND_12":
-      return "Jugend U12";
+      return "Jugend 12";
     case "JUGEND_15":
-      return "Jugend U15";
+      return "Jugend 15";
     case "JUGEND_19":
-      return "Jugend U19";
+      return "Jugend 19";
     case "MADCHEN_12":
-      return "Mädchen U12";
+      return "Mädchen 12";
     case "MADCHEN_15":
-      return "Mädchen U15";
+      return "Mädchen 15";
     case "MADCHEN_19":
-      return "Mädchen U19";
+      return "Mädchen 19";
     default:
       return "Unbekannt";
   }

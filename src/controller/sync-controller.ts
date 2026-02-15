@@ -19,7 +19,8 @@ syncController.post("", access("admin"), async (c) => {
 })
 
 syncController.post("/ids", access("admin"), validateJSON(POST_SYNC_IDS_SCHEMA), async (c) => {
-  await syncService.autoSync();
+  const { ids } = c.get("json");
+  await syncService.manualSync(ids);
   return c.json({ status: "ok" });
 })
 

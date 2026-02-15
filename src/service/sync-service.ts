@@ -3,7 +3,7 @@ import logger from "../lib/logger";
 import { prisma } from "../prisma/prisma";
 import { TTApiMatch, TTApiMatchesReturnType } from "../types/sync";
 import { format, isEqual, previousMonday } from "date-fns";
-import { MatchType } from "../prisma/generated";
+import { Match, MatchType } from "../prisma/generated";
 import { romanToInt } from "../lib/roman";
 import { getTeamType } from "../lib/team";
 import { generateInviteToken } from "../lib/auth";
@@ -66,12 +66,12 @@ export class SyncService {
   }
 
   public async categorizeInconsistencies(matches: TTApiMatch[]) {
-    const missingMatches = [];
-    const unequalTimeMatches = [];
-    const unequalTimeMatchesBefore = [];
-    const unequalHomeGameMatches = [];
-    const unequalLocationMatches = [];
-    const unequalLocationMatchesBefore = [];
+    const missingMatches: TTApiMatch[] = [];
+    const unequalTimeMatches: TTApiMatch[] = [];
+    const unequalTimeMatchesBefore: Match[] = [];
+    const unequalHomeGameMatches: TTApiMatch[] = [];
+    const unequalLocationMatches: TTApiMatch[] = [];
+    const unequalLocationMatchesBefore: Match[] = [];
 
     for (const fetchedMatch of matches) {
       const match = await prisma.match.findFirst({
@@ -248,7 +248,7 @@ ${missingMatchesResult.failedSyncs.length > 0 ? failedSyncsReport : ""}`;
     const matches = (await this.getData()).matches;
     const filteredMatches = matches.filter((match) => ids.includes(match.id));
     for (const match of filteredMatches) {
-      const existingMatch = await prisma.match.findFirst({
+      const existingMatch = await prisma.match.findUnique({
         where: {
           id: match.id,
         },
@@ -258,12 +258,18 @@ ${missingMatchesResult.failedSyncs.length > 0 ? failedSyncsReport : ""}`;
       })
 
       let team = existingMatch && existingMatch.team ? existingMatch.team : null;
+      if (!existingMatch) {
+        team = await prisma.team.findUnique({
+          where: {
+            slug: slugify(match.isHomeGame ? match.teams.home.name : match.teams.away.name),
+          }
+        })
+      }
       if (!team) {
         const teamName = match.isHomeGame ? match.teams.home.name : match.teams.away.name;
         const splitTeamName = teamName.split(" ");
         const teamIndex = romanToInt(splitTeamName[splitTeamName.length - 1]);
         const teamType = getTeamType(teamName);
-        console.log({ teamName, teamType, teamIndex });
 
         if (teamType === undefined || teamIndex === undefined) {
           logger.warn({ teamName }, "Could not determine team type or index, skipping match sync");
