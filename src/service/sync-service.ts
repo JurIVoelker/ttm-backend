@@ -216,7 +216,7 @@ export class SyncService {
     ]);
 
     let reportMessage =
-      `## Auto Sync Report (v1)`
+      `## Auto Sync Report (v1) ${format(new Date(), "yyyy-MM-dd HH:mm")}`;
 
     const successfulSyncsReport = `Successful syncs: ${missingMatchesResult.successfulSyncs.length}`;
     const failedSyncsReport =
