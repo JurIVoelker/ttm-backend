@@ -2,7 +2,7 @@ import { Hono } from "hono"
 import { access, jwtMiddleware } from "../lib/auth"
 import { SyncService } from "../service/sync-service";
 import { validateJSON } from "../lib/validate";
-import { POST_SYNC_IDS_SCHEMA } from "../validation/sync-schema";
+import { POST_SYNC_IDS_SCHEMA, POST_SYNC_SETTINGS_SCHEMA } from "../validation/sync-schema";
 
 export const syncController = new Hono().basePath("/sync")
 syncController.use(jwtMiddleware)
@@ -25,9 +25,12 @@ syncController.post("/ids", access("admin"), validateJSON(POST_SYNC_IDS_SCHEMA),
 })
 
 syncController.get("/settings", access("admin"), async (c) => {
-  return c.json({ status: "ok" });
+  const settings = await syncService.getSettings();
+  return c.json(settings);
 })
 
-syncController.post("/settings", access("admin"), async (c) => {
-  return c.json({ status: "ok" });
+syncController.post("/settings", validateJSON(POST_SYNC_SETTINGS_SCHEMA), access("admin"), async (c) => {
+  const { autoSync, includeRRSync } = c.get("json");
+  const settings = await syncService.updateSettings(autoSync, includeRRSync);
+  return c.json(settings);
 })

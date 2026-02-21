@@ -8,6 +8,7 @@ import { romanToInt } from "../lib/roman";
 import { getTeamType } from "../lib/team";
 import { generateInviteToken } from "../lib/auth";
 import { NotificationService } from "./notification-service";
+import { isRR, isRRMatch } from "../lib/match";
 
 const { TT_API_KEY } = process.env;
 if (!TT_API_KEY) {
@@ -30,14 +31,23 @@ export class SyncService {
       }
     );
 
-    const data = await matchesPromise.json();
+    const data = await matchesPromise.json() as TTApiMatchesReturnType;
+
+    const ignoredMatchIds = (await prisma.hiddenMatch.findMany()).flatMap((hiddenMatch) => hiddenMatch.id);
+    data.matches = data.matches.filter(
+      (match) => !ignoredMatchIds.includes(match.id)
+    );
+
+    const matches = await this.filterMatchesBySettings(data.matches);
+    data.matches = matches;
+
     return data as TTApiMatchesReturnType;
   }
 
   public async filterMatchesBySettings(matches: TTApiMatch[]) {
     let filteredMatches: TTApiMatch[] = [];
 
-    const settings = await prisma.settings.findFirst();
+    const settings = await this.getSettings();
     if (settings?.includeRRSync === false) {
       filteredMatches = matches.filter((match) => {
         const isRRMatch = new Date(match.datetime)
@@ -121,11 +131,39 @@ export class SyncService {
     };
   }
 
+  public async getSettings() {
+    let settings = await prisma.settings.findFirst();
+    if (!settings) {
+      settings = await prisma.settings.create({
+        data: {
+          autoSync: false,
+          includeRRSync: isRR(),
+        }
+      })
+      logger.info("No settings found in database, created default settings with autoSync and includeRRSync set to false");
+    }
+
+    return settings;
+  }
+
+  public async updateSettings(autoSync?: boolean, includeRRSync?: boolean) {
+    const settings = await this.getSettings();
+
+    return await prisma.settings.update({
+      where: {
+        id: settings.id,
+      },
+      data: {
+        autoSync,
+        includeRRSync,
+      }
+    })
+  }
+
   public async getChanges() {
     const fetchedMatches = (await this.getData()).matches;
-    const filteredMatches = await this.filterMatchesBySettings(fetchedMatches);
-    const filteredMatchesByDate = await this.filterMatchesInFuture(filteredMatches);
-    const inconsistencies = await this.categorizeInconsistencies(filteredMatchesByDate);
+    const filteredMatches = await this.filterMatchesInFuture(fetchedMatches);
+    const inconsistencies = await this.categorizeInconsistencies(filteredMatches);
 
     return inconsistencies;
   }
@@ -204,8 +242,6 @@ export class SyncService {
       logger.info("Auto sync is disabled in settings, skipping auto sync");
       return;
     }
-
-    // todo account ignored matches
 
     const changes = await this.getChanges();
     const missingMatchesResult = await this.addMissingMatches(changes.missingMatches);
