@@ -27,20 +27,13 @@ export class PlayerService {
       },
     });
 
-    return players.map((p) => PlayerService.toSinglePositionDTO(p));
+    return players.map((p) => PlayerService.toSinglePositionDTO(p, teamType));
   }
 
-  public static toSinglePositionDTO(player: PlayerWithPositions) {
-    if (player.positions.length > 1) {
-      logger.fatal(
-        `Player ${player.id} (${player.fullName}) has multiple positions`,
-      );
-      throw new Error("Player has multiple positions");
-    }
+  public static toSinglePositionDTO(player: PlayerWithPositions, teamType: TeamType) {
+    const targetPosition = player.positions.find((pos) => pos.teamType === teamType) ?? null;
 
-    const position = player.positions[0] ?? null;
-
-    const dto = { ...player, position, positions: undefined };
+    const dto = { ...player, position: targetPosition, positions: undefined };
     delete dto.positions;
 
     return dto;

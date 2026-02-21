@@ -117,7 +117,7 @@ export class TeamService {
         (entry) => entry.teamType === position.positions[0]?.teamType,
       );
       if (!teamTypeEntry) continue;
-      const playerDTO = PlayerService.toSinglePositionDTO(position);
+      const playerDTO = PlayerService.toSinglePositionDTO(position, teamTypeEntry.teamType);
       teamTypeEntry.players.push(playerDTO);
     }
 
