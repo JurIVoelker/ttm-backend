@@ -19,7 +19,7 @@ if (!TT_API_KEY) {
 export class SyncService {
   private notificationService: NotificationService = new NotificationService();
 
-  public async getData() {
+  public async getData(includeIgnored = false) {
     const matchesPromise = await fetch(
       "https://tt-api.ttc-klingenmuenster.de/api/v1/matches",
       {
@@ -33,10 +33,12 @@ export class SyncService {
 
     const data = await matchesPromise.json() as TTApiMatchesReturnType;
 
-    const ignoredMatchIds = (await prisma.hiddenMatch.findMany()).flatMap((hiddenMatch) => hiddenMatch.id);
-    data.matches = data.matches.filter(
-      (match) => !ignoredMatchIds.includes(match.id)
-    );
+    if (!includeIgnored) {
+      const ignoredMatchIds = (await prisma.hiddenMatch.findMany()).flatMap((hiddenMatch) => hiddenMatch.id);
+      data.matches = data.matches.filter(
+        (match) => !ignoredMatchIds.includes(match.id)
+      );
+    }
 
     const matches = await this.filterMatchesBySettings(data.matches);
     data.matches = matches;
@@ -278,6 +280,27 @@ ${missingMatchesResult.failedSyncs.length > 0 ? failedSyncsReport : ""}`;
     }
 
     await this.notificationService.sendDiscordNotification(reportMessage);
+  }
+
+  public async ignoreMatches(ids: string[]) {
+    await prisma.hiddenMatch.createMany({
+      data: ids.map((id) => ({ id })),
+      skipDuplicates: true,
+    })
+  }
+
+  public async unignoreMatches(ids: string[]) {
+    await prisma.hiddenMatch.deleteMany({
+      where: {
+        id: { in: ids },
+      }
+    })
+  }
+
+  public async getIgnoredMatches() {
+    const ignoredIds = (await prisma.hiddenMatch.findMany()).flatMap((hiddenMatch) => hiddenMatch.id);
+    const matches = (await this.getData(true)).matches.filter((match) => ignoredIds.includes(match.id));
+    return matches;
   }
 
   public async manualSync(ids: string[]) {

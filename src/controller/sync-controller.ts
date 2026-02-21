@@ -34,3 +34,20 @@ syncController.post("/settings", validateJSON(POST_SYNC_SETTINGS_SCHEMA), access
   const settings = await syncService.updateSettings(autoSync, includeRRSync);
   return c.json(settings);
 })
+
+syncController.post("/ignore", access("admin"), validateJSON(POST_SYNC_IDS_SCHEMA), async (c) => {
+  const { ids } = c.get("json");
+  await syncService.ignoreMatches(ids);
+  return c.json({ status: "ok" });
+})
+
+syncController.get("/ignore", access("admin"), async (c) => {
+  const ignoredMatches = await syncService.getIgnoredMatches();
+  return c.json(ignoredMatches);
+})
+
+syncController.delete("/ignore", validateJSON(POST_SYNC_IDS_SCHEMA), access("admin"), async (c) => {
+  const { ids } = c.get("json");
+  await syncService.unignoreMatches(ids);
+  return c.json({ status: "ok" });
+})
