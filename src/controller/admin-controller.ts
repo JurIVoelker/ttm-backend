@@ -34,3 +34,18 @@ adminController.post("/admin", access("admin"), validateJSON(ADD_ADMIN_SCHEMA), 
   return c.json(admin);
 })
 
+adminController.delete("/admins/:adminId", access("admin"), async (c) => {
+  const { adminId } = c.req.param();
+
+  const adminExists = await adminService.existsById(adminId);
+  if (!adminExists) {
+    logger.warn({ id: adminId }, "Admin with this id does not exist");
+    return c.json({ message: "Admin does not exist" }, 400);
+  }
+
+  await adminService.delete(adminId);
+
+  logger.info({ id: adminId }, "Deleted admin");
+  return c.json({ message: "Admin deleted" });
+})
+

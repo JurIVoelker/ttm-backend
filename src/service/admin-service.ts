@@ -29,8 +29,25 @@ export class AdminService {
     return admin !== null;
   }
 
+  public async existsById(id: string): Promise<boolean> {
+    const admin = await prisma.admin.findFirst({
+      where: {
+        id
+      }
+    })
+    return admin !== null;
+  }
+
   public async findMany() {
     const admins = await prisma.admin.findMany();
     return admins;
+  }
+
+  public async delete(id: string) {
+    await prisma.admin.delete({
+      where: {
+        id
+      }
+    })
   }
 }
