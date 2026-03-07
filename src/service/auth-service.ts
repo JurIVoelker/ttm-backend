@@ -18,6 +18,10 @@ import { Context } from "hono";
 import { generateState } from "oslo/oauth2";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import { GOOGLE_CLIENT_SECRET, NODE_ENV } from "../config";
+import { sendEmail } from "../lib/emailUtils";
+// @ts-expect-error hono issue
+import PasswordResetEmail from "../emails/ResetPassword";
+import { render } from "@react-email/components";
 
 const leaderService = new LeaderService();
 const adminService = new AdminService();
@@ -271,5 +275,148 @@ export class AuthService {
     });
 
     return c;
+  }
+
+  public async requestPasswordReset(email: string) {
+    const credentials = await prisma.userCredentials.findFirst({
+      where: {
+        email: email.toLowerCase(),
+      },
+    });
+
+    if (!credentials) {
+      logger.warn({ email }, "Password reset requested for non-existent email");
+      return;
+    }
+
+    const resets = await prisma.passwordReset.findMany({
+      where: {
+        email,
+      },
+    });
+
+    const finishedResets = resets.filter((reset) => reset.expiresAt < new Date());
+    const unfinishedResets = resets.filter(
+      (reset) => reset.expiresAt > new Date()
+    );
+
+    await prisma.passwordReset.deleteMany({
+      where: {
+        id: {
+          in: finishedResets.map((reset) => reset.id),
+        },
+      },
+    });
+
+    if (unfinishedResets.length > 2) {
+      logger.warn({ email }, "Too many password reset requests for this email");
+      return;
+    }
+
+    const token = getRandomString(64);
+
+    const emailsSentToday = await prisma.emailsSent.count({
+      where: {
+        createdAt: {
+          gte: new Date(new Date().setHours(0, 0, 0, 0)),
+          lt: new Date(new Date().setHours(23, 59, 59, 999)),
+        },
+      },
+    });
+
+    if (emailsSentToday >= 90) {
+      logger.warn({ emailsSentToday }, "Too many emails sent today");
+      return new Response(
+        JSON.stringify({ ok: false, error: "Email limit reached for today" }),
+        { status: 403 }
+      );
+    }
+
+    const data = {
+      email,
+      username: credentials.email,
+      companyName: "Tischtennis Manager",
+      token,
+    };
+
+    await sendEmail({
+      Email: PasswordResetEmail,
+      to: email,
+      subject: "Passwort zurücksetzen",
+      data,
+    });
+
+    await prisma.passwordReset.create({
+      data: {
+        email,
+        token,
+        expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24),
+      },
+    });
+
+    logger.info({ email }, "Password reset email sent");
+
+    const logEmailHtml = await render(
+      PasswordResetEmail({ ...data, token: "token" }),
+      {
+        plainText: true,
+      }
+    );
+
+    await prisma.emailsSent.create({
+      data: {
+        email,
+        body: logEmailHtml,
+        subject: "Passwort zurücksetzen",
+      },
+    });
+  }
+
+
+  public async verifyPasswordReset(email: string, token: string, password: string) {
+    const credentials = await prisma.userCredentials.findFirst({
+      where: {
+        email,
+      },
+    });
+
+    if (!credentials) {
+      logger.warn({ email }, "Password reset attempted for non-existent email");
+      return new Response(JSON.stringify({ ok: true }), { status: 200 });
+    }
+
+    const reset = await prisma.passwordReset.findFirst({
+      where: {
+        email,
+        token,
+        expiresAt: {
+          gt: new Date(),
+        },
+      },
+    });
+
+    if (!reset) {
+      logger.warn({ email, token }, "No reset found for email and token");
+      return new Response(JSON.stringify({ ok: false }), { status: 404 });
+    }
+
+    const passwordHash = hashPassword(password);
+
+    await prisma.userCredentials.update({
+      where: {
+        email,
+      },
+      data: {
+        passwordHash,
+      },
+    });
+
+    await prisma.passwordReset.deleteMany({
+      where: {
+        email,
+      },
+    });
+
+    return new Response(JSON.stringify({ ok: true }), { status: 200 });
   }
 }

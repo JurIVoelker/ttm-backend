@@ -7,6 +7,7 @@ export const NODE_ENV = Bun.env.NODE_ENV || "production";
 export const FRONTEND_URL = Bun.env.FRONTEND_URL || "http://localhost:3000";
 
 export const TEST_DEFAULT_EMAIL = Bun.env.TEST_DEFAULT_EMAIL || "";
+export const TEST_CREDENTIALS_EMAIL = Bun.env.TEST_CREDENTIALS_EMAIL || "";
 
 export const DATABASE_URL =
   Bun.env.DATABASE_URL || "postgres://postgres:password@localhost:5432/db";

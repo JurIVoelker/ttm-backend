@@ -3,7 +3,9 @@ import { validateJSON, validatePath } from "../lib/validate";
 import {
   JOIN_TEAM_SCHEMA,
   LOGIN_SCHEMA,
+  PASSWORD_RESET_SCHEMA,
   REGISTER_SCHEMA,
+  REQUEST_PASSWORD_RESET_SCHEMA,
 } from "../validation/auth-schema";
 import { getJwtOrThrow, generateJWT as signJWT } from "../lib/auth";
 import { AuthService } from "../service/auth-service";
@@ -13,11 +15,12 @@ import { jwtPayload } from "../types/auth";
 import { HTTPException } from "hono/http-exception";
 import { FRONTEND_URL, JWT_SECRET } from "../config";
 import { getCookie } from "hono/cookie";
-import { defaultEmail } from "../test/helpers/test-constants";
 import { TEAM_SLUG_PATH } from "../validation/team-schema";
 import { TeamService } from "../service/team-service";
 import { PlayerService } from "../service/player-service";
+import { sleep } from "bun";
 import { rateLimiter } from "hono-rate-limiter";
+import { defaultEmail } from "../test/helpers/test-constants";
 
 const authService = new AuthService();
 const teamService = new TeamService();
@@ -61,6 +64,7 @@ authController.post(
   validateJSON(LOGIN_SCHEMA),
   async (c) => {
     const { email, password, playerId, inviteToken } = c.get("json");
+    await sleep(Math.random() * 100 + 100);
 
     await authService.verifyCredentials(email, password);
 
@@ -179,7 +183,7 @@ authController.post("/register", validateJSON(REGISTER_SCHEMA), async (c) => {
   const credentialsExist = await authService.credentialsExist(email);
   if (credentialsExist) {
     logger.warn({ email }, "Registration attempt with existing credentials");
-    return c.json({ message: "Bad Request" }, 400);
+    return c.json({ message: "Bad Request" }, 409);
   }
 
   await authService.createUserCredentials(email, password);
@@ -188,13 +192,24 @@ authController.post("/register", validateJSON(REGISTER_SCHEMA), async (c) => {
   return c.json({ message: "User registered successfully" });
 });
 
-// authController.post("/leader/password-reset", access(["leader"]), async (c) => {
-//   throw new HTTPException(501, { message: "Not implemented" });
-// })
+authController.post("/leader/password-reset", validateJSON(REQUEST_PASSWORD_RESET_SCHEMA), async (c) => {
+  const { email } = c.get("json");
 
-// authController.post("/leader/password-reset/validate", access(["leader"]), async (c) => {
-//   throw new HTTPException(501, { message: "Not implemented" });
-// })
+  await authService.requestPasswordReset(email);
+
+  await sleep(Math.random() * 300 + 100);
+  return c.json({ message: "If an account with that email exists, a password reset link has been sent" });
+})
+
+authController.post("/leader/password-reset/validate", validateJSON(PASSWORD_RESET_SCHEMA), async (c) => {
+  const { email, password, token } = c.get("json");
+
+  await sleep(Math.random() * 300 + 100);
+
+  const response = await authService.verifyPasswordReset(email, token, password);
+
+  return response
+});
 
 authController.post("/refresh", async (c) => {
   const rawJwt = c.req.header("Authorization")?.replace("Bearer ", "");

@@ -2,7 +2,7 @@ import z from "zod";
 
 export const LOGIN_SCHEMA = z.object({
   email: z.email(),
-  password: z.string().min(6),
+  password: z.string(),
   playerId: z.string().optional(),
   inviteToken: z.string().optional(),
 })
@@ -10,6 +10,16 @@ export const LOGIN_SCHEMA = z.object({
 export const JOIN_TEAM_SCHEMA = z.object({
   playerId: z.string().optional(),
   inviteToken: z.string().optional(),
+})
+
+export const REQUEST_PASSWORD_RESET_SCHEMA = z.object({
+  email: z.email(),
+})
+
+export const PASSWORD_RESET_SCHEMA = z.object({
+  email: z.email(),
+  password: z.string().min(8),
+  token: z.string(),
 })
 
 export const REGISTER_SCHEMA = z.object({

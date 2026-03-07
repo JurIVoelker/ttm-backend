@@ -1,3 +1,4 @@
+import { TEST_CREDENTIALS_EMAIL, TEST_DEFAULT_EMAIL } from "../../config";
 import { dropAll } from "../../lib/db";
 import { AdminService } from "../../service/admin-service";
 import { AuthService } from "../../service/auth-service";
@@ -6,7 +7,6 @@ import { MatchService } from "../../service/match-service";
 import { PlayerService } from "../../service/player-service";
 import { TeamService } from "../../service/team-service";
 import {
-  defaultPassword,
   defaultPlayer,
   defaultTeam,
   defaultUser,
@@ -31,12 +31,14 @@ const matchService = new MatchService();
     name: "Erwachsene III",
     groupIndex: 3,
   });
+
   const leader = await leaderService.create(defaultUser);
-
   await teamService.addLeader({ teamSlug: team.slug, leaderId: leader.id });
-
   await adminService.create(defaultUser);
-  await authService.createUserCredentials(defaultUser.email, defaultPassword);
+
+  await authService.createUserCredentials(TEST_CREDENTIALS_EMAIL, "123");
+  const leader2 = await leaderService.create({ email: TEST_CREDENTIALS_EMAIL, fullName: "Another Leader" });
+  await teamService.addLeader({ teamSlug: team2.slug, leaderId: leader2.id });
 
   const player = await playerService.create(defaultPlayer);
   const player2 = await playerService.create({
