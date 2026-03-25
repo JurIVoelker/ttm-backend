@@ -36,29 +36,6 @@ authController.use(
   })
 );
 
-authController.post("/login", async (c) => {
-  const jwt = await signJWT({
-    payload: {
-      roles: ["admin", "leader"],
-      admin: {
-        email: defaultEmail!,
-        id: "1",
-      },
-      leader: {
-        email: defaultEmail!,
-        id: "1",
-        teams: ["team-1", "team-2"],
-      },
-      player: {
-        id: "1",
-        teams: ["team-1", "team-2"],
-      },
-    },
-  });
-
-  return c.json({ jwt });
-});
-
 authController.post(
   "/login/credentials",
   validateJSON(LOGIN_SCHEMA),
