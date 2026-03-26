@@ -24,6 +24,11 @@ syncController.post("/ids", access("admin"), validateJSON(POST_SYNC_IDS_SCHEMA),
   return c.json({ status: "ok" });
 })
 
+syncController.get("/players", access("admin"), async (c) => {
+  const players = await syncService.getPlayers();
+  return c.json(players);
+})
+
 syncController.get("/settings", access("admin"), async (c) => {
   const settings = await syncService.getSettings();
   return c.json(settings);

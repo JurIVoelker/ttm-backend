@@ -1,11 +1,11 @@
 import slugify from "slugify";
 import logger from "../lib/logger";
 import { prisma } from "../prisma/prisma";
-import { TTApiMatch, TTApiMatchesReturnType } from "../types/sync";
+import { TTApiMatch, TTApiMatchesReturnType, TTApiPlayersReturnType } from "../types/sync";
 import { format, isEqual, previousMonday } from "date-fns";
 import { Match, MatchType } from "../prisma/generated";
 import { romanToInt } from "../lib/roman";
-import { getTeamType } from "../lib/team";
+import { getTeamIndex, getTeamType } from "../lib/team";
 import { generateInviteToken } from "../lib/auth";
 import { NotificationService } from "./notification-service";
 import { isRR, isRRMatch } from "../lib/match";
@@ -301,6 +301,52 @@ ${missingMatchesResult.failedSyncs.length > 0 ? failedSyncsReport : ""}`;
     const ignoredIds = (await prisma.hiddenMatch.findMany()).flatMap((hiddenMatch) => hiddenMatch.id);
     const matches = (await this.getData(true)).matches.filter((match) => ignoredIds.includes(match.id));
     return matches;
+  }
+
+  public async getPlayers() {
+    const response = await fetch(
+      "https://tt-api.ttc-klingenmuenster.de/api/v1/players",
+      {
+        headers: {
+          "Content-Type": "application/json",
+          ...(TT_API_KEY && { Authorization: TT_API_KEY }),
+        },
+        cache: "no-store",
+      }
+    );
+    const data = await response.json() as TTApiPlayersReturnType;
+
+    const teamTypeMap = new Map<string, Array<{ name: string; QTTR: number; position: number; teamIndex: number }>>();
+
+    for (const teamData of data.playerData) {
+      let teamType: string;
+      let teamIndex: number;
+      try {
+        teamType = getTeamType(teamData.teamName);
+        teamIndex = getTeamIndex(teamData.teamName);
+      } catch {
+        logger.warn({ teamName: teamData.teamName }, "Could not determine team type or index, skipping");
+        continue;
+      }
+
+      if (!teamTypeMap.has(teamType)) {
+        teamTypeMap.set(teamType, []);
+      }
+
+      for (const apiPlayer of teamData.players) {
+        teamTypeMap.get(teamType)!.push({
+          name: apiPlayer.name,
+          QTTR: apiPlayer.QTTR,
+          position: apiPlayer.position,
+          teamIndex,
+        });
+      }
+    }
+
+    return Array.from(teamTypeMap.entries()).map(([teamType, players]) => ({
+      teamType,
+      players,
+    }));
   }
 
   public async manualSync(ids: string[]) {

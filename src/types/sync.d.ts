@@ -43,3 +43,18 @@ export type TTApiMatchesReturnType = {
 };
 
 export type TTApiMatch = TTApiMatchesReturnType["matches"][number];
+
+export type TTApiPlayersReturnType = {
+  playerData: {
+    teamName: string;
+    players: {
+      name: string;
+      QTTR: number;
+      position: number;
+    }[];
+  }[];
+  meta: {
+    id: number;
+    expiresAt: string;
+  };
+};
