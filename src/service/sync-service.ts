@@ -1,7 +1,7 @@
 import slugify from "slugify";
 import logger from "../lib/logger";
 import { prisma } from "../prisma/prisma";
-import { TTApiMatch, TTApiMatchesReturnType, TTApiPlayersReturnType } from "../types/sync";
+import { TTApiMatch, TTApiMatchesReturnType, TTApiPlayersReturnType, SyncPlayersReturnType } from "../types/sync";
 import { format, isEqual, previousMonday } from "date-fns";
 import { Match, MatchType } from "../prisma/generated";
 import { romanToInt } from "../lib/roman";
@@ -303,7 +303,7 @@ ${missingMatchesResult.failedSyncs.length > 0 ? failedSyncsReport : ""}`;
     return matches;
   }
 
-  public async getPlayers() {
+  public async getPlayers(): Promise<SyncPlayersReturnType> {
     const response = await fetch(
       "https://tt-api.ttc-klingenmuenster.de/api/v1/players",
       {
