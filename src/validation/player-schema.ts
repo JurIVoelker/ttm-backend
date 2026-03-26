@@ -27,7 +27,7 @@ export const POST_PLAYER_POSITIONS_SCHEMA = z.object({
     positions: z.array(z.object({
       teamType: z.enum(TeamType),
       teamIndex: z.number(),
-      position: z.number(),
+      position: z.coerce.number(),
     }).loose()),
   }))
 });

@@ -264,10 +264,15 @@ export class PlayerService {
 
         logger.debug(`Checking existence of player with ID ${pos.playerId}: ${exists ? "found" : "not found"}`);
 
+        const oldId = pos.playerId;
         if (!exists) {
           logger.debug(`Player with ID ${pos.playerId} does not exist, creating...`);
           const playerData = players.find((p) => p.id === pos.playerId);
-          if (!playerData) continue;
+          if (!playerData) {
+            logger.warn(`No player data found for ID ${pos.playerId}, skipping position`);
+            pos.playerId = null!;
+            continue;
+          }
           const result = await tx.player.create({
             data: {
               fullName: playerData.fullName,
@@ -275,6 +280,14 @@ export class PlayerService {
           })
           pos.playerId = result.id;
           logger.info(`Created new player: ${result.fullName} (ID: ${result.id})`);
+        } else {
+          pos.playerId = exists.id;
+        }
+
+        for (const other of newTeamPositions) {
+          if (other !== pos && other.playerId === oldId) {
+            other.playerId = pos.playerId;
+          }
         }
 
         const team = existingTeams.find(t => t.type === pos.teamType && t.groupIndex === pos.teamIndex);
@@ -289,12 +302,13 @@ export class PlayerService {
               inviteToken: generateInviteToken(),
             }
           })
+          existingTeams.push(result);
           logger.info(`Created new team: ${result.name}`);
         }
       }
 
       await tx.playerPosition.createMany({
-        data: newTeamPositions,
+        data: newTeamPositions.filter((p) => p.playerId != null),
       });
 
       logger.info(`Persisted ${newTeamPositions.length} player positions for team type ${teamType}`);
