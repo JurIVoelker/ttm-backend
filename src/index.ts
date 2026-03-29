@@ -1,13 +1,15 @@
 import { Hono } from "hono";
 import { showRoutes } from "hono/dev";
 import { cors } from "hono/cors";
+import { HTTPException } from "hono/http-exception";
 import { authController } from "./controller/auth-controller";
 import { matchController } from "./controller/match-controller";
 import { teamController } from "./controller/team-controller";
 import { leaderController } from "./controller/leader-controller";
 import { playerController } from "./controller/player-controller";
 import { adminController } from "./controller/admin-controller";
-import { loggerMiddleware } from "./lib/logger";
+import { loggerMiddleware, getClientIp } from "./lib/logger";
+import logger from "./lib/logger";
 import { notificationController } from "./controller/notification-controller";
 import { FRONTEND_URL } from "./config";
 import { rateLimiter } from "hono-rate-limiter";
@@ -34,6 +36,10 @@ app.use(
       c.req.header("x-forwarded-for")?.split(",")[0].trim() ??
       c.req.header("x-real-ip") ??
       "unknown",
+    handler: (c) => {
+      logger.warn({ ip: getClientIp(c), path: c.req.path }, "Rate limit exceeded");
+      return c.json({ message: "Too many requests" }, 429);
+    },
   })
 );
 
@@ -47,6 +53,17 @@ app.route("/", adminController);
 app.route("/", notificationController);
 app.route("/", syncController);
 
+
+app.onError((err, c) => {
+  if (err instanceof HTTPException) {
+    if (err.status >= 500) {
+      logger.error({ err, path: c.req.path, method: c.req.method }, "Unhandled HTTP exception");
+    }
+    return err.getResponse();
+  }
+  logger.error({ err, path: c.req.path, method: c.req.method }, "Unhandled server error");
+  return c.json({ message: "Internal Server Error" }, 500);
+});
 
 showRoutes(app, {
   colorize: true,

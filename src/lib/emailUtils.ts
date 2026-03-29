@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { Resend } from "resend";
 import "dotenv/config";
+import logger from "./logger";
 
 interface sendEmailProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -27,11 +28,16 @@ export const sendEmail = async ({
   }
 
   const resend = new Resend(RESEND_API_KEY);
-  await resend.emails.send({
-    from: RESEND_EMAIL_FROM || "",
-    to,
-    subject,
-    // @ts-expect-error
-    react: Email({ ...data }),
-  });
+  try {
+    await resend.emails.send({
+      from: RESEND_EMAIL_FROM || "",
+      to,
+      subject,
+      // @ts-expect-error
+      react: Email({ ...data }),
+    });
+  } catch (err) {
+    logger.error({ err, to }, "Failed to send email");
+    throw err;
+  }
 };

@@ -2,6 +2,7 @@ import { createMiddleware } from "hono/factory";
 import { pino } from "pino";
 import { PinoPretty } from "pino-pretty";
 import { format } from "date-fns"
+import { NODE_ENV } from "../config";
 
 const stream = PinoPretty({
   levelFirst: true,
@@ -40,11 +41,16 @@ const getStatusColor = (status: number) => {
   return WHITE;
 }
 
+export const getClientIp = (c: { req: { header: (name: string) => string | undefined } }) =>
+  c.req.header("x-forwarded-for")?.split(",")[0].trim() ?? c.req.header("x-real-ip") ?? "unknown";
+
 export const loggerMiddleware = createMiddleware(async (c, next) => {
   const color = methodColors[c.req.method] || WHITE;
   const start = Date.now();
-  console.log(`\n<-- [${format(start, "HH:mm:ss:SSS")}] ${color}${c.req.method} ${WHITE}${c.req.path}`);
   await next();
+
+  if (NODE_ENV === "production" && c.req.method === "GET" && c.res.status < 400) return;
+
   const end = Date.now();
   const ms = end - start;
 
@@ -58,5 +64,6 @@ export const loggerMiddleware = createMiddleware(async (c, next) => {
   }
 
   const sizeStr = size > 0 ? ` - ${size} Bytes` : "";
+  console.log(`<-- [${format(start, "HH:mm:ss:SSS")}] ${color}${c.req.method} ${WHITE}${c.req.path}`);
   console.log(`--> [${format(end, "HH:mm:ss:SSS")}] Status ${getStatusColor(c.res.status)}${c.res.status}${WHITE} - ${ms} ms${sizeStr}`);
 });

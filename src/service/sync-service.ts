@@ -20,18 +20,23 @@ export class SyncService {
   private notificationService: NotificationService = new NotificationService();
 
   public async getData(includeIgnored = false) {
-    const matchesPromise = await fetch(
-      "https://tt-api.ttc-klingenmuenster.de/api/v1/matches",
-      {
-        headers: {
-          "Content-Type": "application/json",
-          ...(TT_API_KEY && { Authorization: TT_API_KEY }),
-        },
-        cache: "no-store",
-      }
-    );
-
-    const data = await matchesPromise.json() as TTApiMatchesReturnType;
+    let data: TTApiMatchesReturnType;
+    try {
+      const response = await fetch(
+        "https://tt-api.ttc-klingenmuenster.de/api/v1/matches",
+        {
+          headers: {
+            "Content-Type": "application/json",
+            ...(TT_API_KEY && { Authorization: TT_API_KEY }),
+          },
+          cache: "no-store",
+        }
+      );
+      data = await response.json() as TTApiMatchesReturnType;
+    } catch (err) {
+      logger.error({ err }, "TT API fetch failed");
+      throw err;
+    }
 
     if (!includeIgnored) {
       const ignoredMatchIds = (await prisma.hiddenMatch.findMany()).flatMap((hiddenMatch) => hiddenMatch.id);

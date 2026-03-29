@@ -5,6 +5,9 @@ import { jwtPayload } from "../types/auth";
 import { isAdmin, isLeaderAtTeam } from "./auth";
 import logger from "./logger";
 
+const formatZodIssues = (error: z.ZodError) =>
+  error.issues.map(i => `[${i.path.join(".") || "root"}] ${i.message}`).join("; ");
+
 export const validateJSON = <T>(json: z.ZodType<T>) => {
   return createMiddleware<{
     Variables: {
@@ -21,6 +24,7 @@ export const validateJSON = <T>(json: z.ZodType<T>) => {
     const validationResult = await json.safeParseAsync(body);
 
     if (!validationResult.success) {
+      logger.warn(`JSON validation failed: ${formatZodIssues(validationResult.error)}`);
       throw new HTTPException(400, { message: validationResult.error.message });
     }
 
@@ -39,6 +43,7 @@ export const validatePath = <T>(pathSchema: z.ZodType<T>) => {
     const validationResult = await pathSchema.safeParseAsync(paths);
 
     if (!validationResult.success) {
+      logger.warn(`Path validation failed: ${formatZodIssues(validationResult.error)}`);
       throw new HTTPException(404, { message: validationResult.error.message });
     }
 

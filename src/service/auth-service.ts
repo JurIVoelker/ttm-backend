@@ -44,16 +44,18 @@ export class AuthService {
     return Boolean(credentials);
   }
 
-  async verifyCredentials(email: string, password: string) {
+  async verifyCredentials(email: string, password: string, ip?: string) {
     const credentials = await prisma.userCredentials.findUnique({
       where: { email },
     });
 
     if (!credentials) {
+      logger.warn({ email, ip }, "Login failed: credentials not found");
       throw new HTTPException(403, { message: "Invalid credentials" });
     }
     const valid = compareSync(password, credentials.passwordHash);
     if (!valid) {
+      logger.warn({ email, ip }, "Login failed: wrong password");
       throw new HTTPException(403, { message: "Invalid credentials" });
     }
     return valid;

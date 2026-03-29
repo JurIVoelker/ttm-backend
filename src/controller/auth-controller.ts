@@ -9,7 +9,7 @@ import {
 } from "../validation/auth-schema";
 import { getJwtOrThrow, generateJWT as signJWT } from "../lib/auth";
 import { AuthService } from "../service/auth-service";
-import logger from "../lib/logger";
+import logger, { getClientIp } from "../lib/logger";
 import { decode, verify } from "hono/jwt";
 import { jwtPayload } from "../types/auth";
 import { HTTPException } from "hono/http-exception";
@@ -36,6 +36,10 @@ authController.use(
       c.req.header("x-forwarded-for")?.split(",")[0].trim() ??
       c.req.header("x-real-ip") ??
       "unknown",
+    handler: (c) => {
+      logger.warn({ ip: getClientIp(c), path: c.req.path }, "Auth rate limit exceeded");
+      return c.json({ message: "Too many requests" }, 429);
+    },
   })
 );
 
@@ -46,19 +50,21 @@ authController.post(
     const { email, password, playerId, inviteToken } = c.get("json");
     await sleep(Math.random() * 100 + 100);
 
-    await authService.verifyCredentials(email, password);
+    const ip = getClientIp(c);
+    await authService.verifyCredentials(email, password, ip);
 
     const jwt = await authService.getJwt(email, playerId, inviteToken);
     const payload = decode(jwt).payload as jwtPayload;
 
     if (!payload.roles.includes("leader") && !payload.roles.includes("admin")) {
-      logger.warn({ email }, "Login attempt by unauthorized user");
+      logger.warn({ email, ip }, "Login attempt by unauthorized user");
       throw new HTTPException(403, { message: "Forbidden" });
     }
 
     const refreshToken = await authService.createRefreshToken(email);
     await authService.setRefreshTokenCookie(c, refreshToken);
 
+    logger.info({ email, roles: payload.roles }, "User logged in");
     return c.json({ jwt });
   },
 );
@@ -149,18 +155,19 @@ authController.post("/team/join", validateJSON(JOIN_TEAM_SCHEMA), async (c) => {
 
 authController.post("/register", validateJSON(REGISTER_SCHEMA), async (c) => {
   const { email, password } = c.get("json");
+  const ip = getClientIp(c);
 
   const existingAdmin = await authService.findAdminByEmail(email);
   const existingLeader = await authService.findLeaderByEmail(email);
 
   if (!existingAdmin && !existingLeader) {
-    logger.warn({ email }, "Registration attempt with unrecognized email");
+    logger.warn({ email, ip }, "Registration attempt with unrecognized email");
     return c.json({ message: "Bad Request" }, 400);
   }
 
   const credentialsExist = await authService.credentialsExist(email);
   if (credentialsExist) {
-    logger.warn({ email }, "Registration attempt with existing credentials");
+    logger.warn({ email, ip }, "Registration attempt with existing credentials");
     return c.json({ message: "Bad Request" }, 409);
   }
 
