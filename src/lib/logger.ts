@@ -49,7 +49,7 @@ export const loggerMiddleware = createMiddleware(async (c, next) => {
   const start = Date.now();
   await next();
 
-  if (NODE_ENV === "production" && c.req.method === "GET" && c.res.status < 400) return;
+  if (NODE_ENV === "production" && (c.req.method === "GET" || c.req.method === "OPTIONS") && c.res.status < 400) return;
 
   const end = Date.now();
   const ms = end - start;
