@@ -20,7 +20,6 @@ import { TeamService } from "../service/team-service";
 import { PlayerService } from "../service/player-service";
 import { sleep } from "bun";
 import { rateLimiter } from "hono-rate-limiter";
-import { defaultEmail } from "../test/helpers/test-constants";
 
 const authService = new AuthService();
 const teamService = new TeamService();
