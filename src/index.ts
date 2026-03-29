@@ -30,7 +30,10 @@ app.use(
   rateLimiter({
     windowMs: 60 * 60 * 1000,
     limit: 1000,
-    keyGenerator: (c) => c.req.header("x-forwarded-for") ?? "",
+    keyGenerator: (c) =>
+      c.req.header("x-forwarded-for")?.split(",")[0].trim() ??
+      c.req.header("x-real-ip") ??
+      "unknown",
   })
 );
 

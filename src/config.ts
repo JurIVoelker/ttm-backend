@@ -1,8 +1,13 @@
-export const JWT_SECRET = Bun.env.JWT_SECRET || "it-is-very-secret";
+export const NODE_ENV = Bun.env.NODE_ENV || "production";
+export const SECURE_COOKIES = NODE_ENV === "production";
+
+const _jwtSecret = Bun.env.JWT_SECRET;
+if (!_jwtSecret && NODE_ENV === "production") {
+  throw new Error("JWT_SECRET is not set in production");
+}
+export const JWT_SECRET = _jwtSecret || "it-is-very-secret";
 
 export const BASE_URL = Bun.env.BASE_URL || "http://localhost:8080";
-
-export const NODE_ENV = Bun.env.NODE_ENV || "production";
 
 export const FRONTEND_URL = Bun.env.FRONTEND_URL || "http://localhost:3000";
 

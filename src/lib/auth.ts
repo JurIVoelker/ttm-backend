@@ -43,12 +43,7 @@ export const access = (_allowedRoles: Role[] | Role): MiddlewareHandler => {
   };
 };
 
-export const generateInviteToken = () => {
-  return (
-    Math.random().toString(36).substring(2, 15) +
-    Math.random().toString(36).substring(2, 15)
-  );
-};
+export const generateInviteToken = () => getRandomString(32);
 
 export const isLeaderAtTeam = (payload: jwtPayload, teamSlug: string) => {
   return payload.leader?.teams.some((t) => t === teamSlug);
@@ -92,7 +87,6 @@ export const getRandomString = (length: number) =>
 export const getJwtOrThrow = (c: Context) => {
   const authHeader = c.req.header("Authorization");
   const token = authHeader?.startsWith("Bearer ") ? authHeader.replace("Bearer ", "") : authHeader
-  console.log({ authHeader })
   if (!token) {
     throw new HTTPException(401, { message: "Unauthorized" });
   }

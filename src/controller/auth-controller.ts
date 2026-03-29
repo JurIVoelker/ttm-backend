@@ -32,7 +32,10 @@ authController.use(
   rateLimiter({
     windowMs: 10 * 60 * 1000,
     limit: 20,
-    keyGenerator: (c) => c.req.header("x-forwarded-for") ?? "",
+    keyGenerator: (c) =>
+      c.req.header("x-forwarded-for")?.split(",")[0].trim() ??
+      c.req.header("x-real-ip") ??
+      "unknown",
   })
 );
 
@@ -89,8 +92,6 @@ authController.post("/team/join", validateJSON(JOIN_TEAM_SCHEMA), async (c) => {
 
   const existingJwt = c.req.header("Authorization")?.replace("Bearer ", "");
   let payload: jwtPayload | null = null;
-
-  console.log({ playerId, inviteToken, existingJwt })
 
   if (existingJwt) {
     try {
@@ -236,11 +237,9 @@ authController.post("/refresh", async (c) => {
 
 authController.get("/inviteToken/players/:teamSlug", validatePath(TEAM_SLUG_PATH), async (c) => {
   const { teamSlug } = c.get("path");
-  // console.log({ teamSlug });
   const inviteToken = getJwtOrThrow(c);
   const validInviteToken = await teamService.getInviteToken(teamSlug);
 
-  // console.log({ inviteToken, validInviteToken });
   if (inviteToken !== validInviteToken) {
     throw new HTTPException(403, { message: "Forbidden" });
   }

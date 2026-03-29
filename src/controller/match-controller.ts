@@ -64,8 +64,6 @@ matchController.post(
     const { teamSlug } = c.get("path");
     const matchData = c.get("json");
 
-    console.log({ matchData });
-
     const match = await matchService.create({ data: matchData, teamSlug });
     const response = c.json(match, 201);
     response.headers.set("Location", `/api/match/${teamSlug}/${match.id}`);
@@ -82,9 +80,6 @@ matchController.put(
   async (c) => {
     const { matchId, teamSlug } = c.get("path");
     const matchData = c.get("json");
-
-    console.log("TEST");
-    console.log({ matchData });
 
     const matchBelongsToTeam = await matchService.isMatchOfTeam(
       matchId,

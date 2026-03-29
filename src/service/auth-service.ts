@@ -17,7 +17,7 @@ import { TeamService } from "./team-service";
 import { Context } from "hono";
 import { generateState } from "oslo/oauth2";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
-import { GOOGLE_CLIENT_SECRET, NODE_ENV } from "../config";
+import { GOOGLE_CLIENT_SECRET, SECURE_COOKIES } from "../config";
 import { sendEmail } from "../lib/emailUtils";
 // @ts-expect-error hono issue
 import PasswordResetEmail from "../emails/ResetPassword";
@@ -96,7 +96,7 @@ export class AuthService {
   async setRefreshTokenCookie(c: Context, refreshToken: string) {
     setCookie(c, "refreshToken", refreshToken, {
       httpOnly: true,
-      secure: NODE_ENV === "production",
+      secure: SECURE_COOKIES,
       sameSite: "Lax",
       path: "/",
       maxAge: 30 * 24 * 60 * 60, // 30 days
@@ -239,7 +239,7 @@ export class AuthService {
 
     setCookie(c, "google_oauth2_state", googleOAuth2State, {
       httpOnly: true,
-      secure: false,
+      secure: SECURE_COOKIES,
       path: "/",
       maxAge: 60 * 60,
     });
@@ -270,7 +270,7 @@ export class AuthService {
   public async deleteCookies(c: Context) {
     deleteCookie(c, "refreshToken", {
       httpOnly: true,
-      secure: NODE_ENV === "production",
+      secure: SECURE_COOKIES,
       sameSite: "Lax",
     });
 

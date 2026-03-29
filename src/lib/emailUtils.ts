@@ -27,13 +27,11 @@ export const sendEmail = async ({
   }
 
   const resend = new Resend(RESEND_API_KEY);
-  const result = await resend.emails.send({
+  await resend.emails.send({
     from: RESEND_EMAIL_FROM || "",
     to,
     subject,
     // @ts-expect-error
     react: Email({ ...data }),
   });
-
-  console.log(result)
 };
