@@ -10,3 +10,7 @@ export const POST_SUBSCRIBE_NOTIFICATION_SCHEMA = z
     }),
   })
   .loose();
+
+export const DELETE_UNSUBSCRIBE_SCHEMA = z.object({
+  endpoint: z.url(),
+});

@@ -34,6 +34,8 @@ model Admin {
   id       String @id @default(cuid())
   email    String @unique
   fullName String
+
+  pushSubscriptions PushSubscription[]
 }
 
 model TeamLeader {
@@ -41,6 +43,8 @@ model TeamLeader {
   email    String @unique
   fullName String
   team     Team[]
+
+  pushSubscriptions PushSubscription[]
 }
 
 model Player {
@@ -51,6 +55,24 @@ model Player {
   matches                Match[]
   matchAvailabilityVotes MatchAvailabilityVote[]
   teams                  Team[]
+  pushSubscriptions      PushSubscription[]
+}
+
+model PushSubscription {
+  id             String    @id @default(cuid())
+  endpoint       String    @unique
+  p256dh         String
+  auth           String
+  expirationTime DateTime?
+  createdAt      DateTime  @default(now())
+
+  playerId String?
+  leaderId String?
+  adminId  String?
+
+  player Player?     @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  leader TeamLeader? @relation(fields: [leaderId], references: [id], onDelete: Cascade)
+  admin  Admin?      @relation(fields: [adminId], references: [id], onDelete: Cascade)
 }
 
 model PlayerPosition {
