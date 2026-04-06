@@ -90,9 +90,10 @@ Der Server läuft unter [http://localhost:8080](http://localhost:8080).
 | `GOOGLE_CLIENT_SECRET` | Google OAuth2 Client-Secret | ja |
 | `VAPID_PUBLIC_KEY` | Web Push Public Key | ja |
 | `VAPID_PRIVATE_KEY` | Web Push Private Key | ja |
-| `VAPID_EMAIL` | Kontakt-E-Mail für VAPID | ja |
+| `VAPID_PUSH_EMAIL` | Kontakt-E-Mail für VAPID | ja |
 | `RESEND_API_KEY` | API-Key für E-Mail-Versand | ja |
 | `RESEND_EMAIL_FROM` | Absender-Adresse für E-Mails | ja |
+| `TT_API_KEY` | API-Key für externe Tischtennis-Datenquelle | ja |
 | `DISCORD_WEBHOOK_URL` | Discord-Benachrichtigungen | nein |
 
 ## Datenbankmodelle
