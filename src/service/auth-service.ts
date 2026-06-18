@@ -242,6 +242,7 @@ export class AuthService {
     setCookie(c, "google_oauth2_state", googleOAuth2State, {
       httpOnly: true,
       secure: SECURE_COOKIES,
+      sameSite: "Lax",
       path: "/",
       maxAge: 60 * 60,
     });
