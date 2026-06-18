@@ -11,6 +11,11 @@ export const BASE_URL = Bun.env.BASE_URL || "http://localhost:8080";
 
 export const FRONTEND_URL = Bun.env.FRONTEND_URL || "http://localhost:3000";
 
+// Shared parent domain for cookies that must be readable across frontend and
+// backend subdomains (e.g. ".dev.tt-manager.ttc.voelkerlabs.de"). Leave unset
+// in local dev so cookies stay host-only on localhost.
+export const COOKIE_DOMAIN = Bun.env.COOKIE_DOMAIN || undefined;
+
 export const TEST_DEFAULT_EMAIL = Bun.env.TEST_DEFAULT_EMAIL || "";
 export const TEST_CREDENTIALS_EMAIL = Bun.env.TEST_CREDENTIALS_EMAIL || "";
 

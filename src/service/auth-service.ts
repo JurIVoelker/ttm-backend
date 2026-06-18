@@ -17,7 +17,7 @@ import { TeamService } from "./team-service";
 import { Context } from "hono";
 import { generateState } from "oslo/oauth2";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
-import { GOOGLE_CLIENT_SECRET, SECURE_COOKIES } from "../config";
+import { COOKIE_DOMAIN, GOOGLE_CLIENT_SECRET, SECURE_COOKIES } from "../config";
 import { sendEmail } from "../lib/emailUtils";
 // @ts-expect-error hono issue
 import PasswordResetEmail from "../emails/ResetPassword";
@@ -100,6 +100,7 @@ export class AuthService {
       httpOnly: true,
       secure: SECURE_COOKIES,
       sameSite: "Lax",
+      domain: COOKIE_DOMAIN,
       path: "/",
       maxAge: 30 * 24 * 60 * 60, // 30 days
     });
@@ -243,6 +244,7 @@ export class AuthService {
       httpOnly: true,
       secure: SECURE_COOKIES,
       sameSite: "Lax",
+      domain: COOKIE_DOMAIN,
       path: "/",
       maxAge: 60 * 60,
     });
@@ -275,6 +277,7 @@ export class AuthService {
       httpOnly: true,
       secure: SECURE_COOKIES,
       sameSite: "Lax",
+      domain: COOKIE_DOMAIN,
     });
 
     return c;
