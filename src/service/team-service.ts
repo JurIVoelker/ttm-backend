@@ -101,7 +101,7 @@ export class TeamService {
   }
 
   public async getTeamsWithPositions() {
-    const positions = await prisma.player.findMany({
+    const players = await prisma.player.findMany({
       include: {
         positions: true,
       },
@@ -112,13 +112,13 @@ export class TeamService {
     const returnValue: { teamType: TeamType; players: Player[] }[] =
       teamTypes.map((teamType) => ({ teamType, players: [] }));
 
-    for (const position of positions) {
-      const teamTypeEntry = returnValue.find(
-        (entry) => entry.teamType === position.positions[0]?.teamType,
-      );
-      if (!teamTypeEntry) continue;
-      const playerDTO = PlayerService.toSinglePositionDTO(position, teamTypeEntry.teamType);
-      teamTypeEntry.players.push(playerDTO);
+    for (const player of players) {
+      const playerTeamTypes = new Set(player.positions.map((p) => p.teamType));
+      for (const teamType of playerTeamTypes) {
+        const teamTypeEntry = returnValue.find((entry) => entry.teamType === teamType);
+        if (!teamTypeEntry) continue;
+        teamTypeEntry.players.push(PlayerService.toSinglePositionDTO(player, teamType));
+      }
     }
 
     return returnValue;
