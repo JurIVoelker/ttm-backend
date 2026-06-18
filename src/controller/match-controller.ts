@@ -48,8 +48,8 @@ matchController.get(
   access(["player", "leader", "admin"]),
   validatePath(TEAM_SLUG_AND_MATCH_ID_PATH),
   async (c) => {
-    const { matchId } = c.get("path");
-    const match = await matchService.getMatchById(matchId);
+    const { matchId, teamSlug } = c.get("path");
+    const match = await matchService.getMatchById(matchId, teamSlug);
     return c.json(match);
   },
 );

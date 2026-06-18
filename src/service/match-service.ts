@@ -33,7 +33,11 @@ export class MatchService {
       },
       include: {
         location: true,
-        matchAvailabilityVotes: true,
+        matchAvailabilityVotes: {
+          where: {
+            player: { teams: { some: { slug: teamSlug } } },
+          },
+        },
         lineup: true
       },
       orderBy: {
@@ -68,14 +72,18 @@ export class MatchService {
     return matchesWithSortedLineup;
   }
 
-  public async getMatchById(matchId: string) {
+  public async getMatchById(matchId: string, teamSlug: string) {
     const match = await prisma.match.findUnique({
       where: {
         id: matchId,
       },
       include: {
         location: true,
-        matchAvailabilityVotes: true,
+        matchAvailabilityVotes: {
+          where: {
+            player: { teams: { some: { slug: teamSlug } } },
+          },
+        },
         lineup: true,
       },
     });
