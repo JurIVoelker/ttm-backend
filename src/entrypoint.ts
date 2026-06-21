@@ -14,6 +14,15 @@ if (args.length === 0) {
   synService.autoSync().then(() => {
     process.exit(0);
   })
+} else if (args[0] === 'migrate') {
+  if (!args[1] || !args[2]) {
+    console.error('Usage: migrate <oldDbUrl> <newDbUrl> [--dry-run]');
+    process.exit(1);
+  }
+  import('../scripts/migrate-invite-tokens.js').catch(err => {
+    console.error('Migration failed:', err);
+    process.exit(1);
+  });
 } else {
   console.error(`Unknown argument: ${args[0]}`);
   process.exit(1);
