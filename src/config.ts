@@ -19,6 +19,10 @@ export const COOKIE_DOMAIN = Bun.env.COOKIE_DOMAIN || undefined;
 export const TEST_DEFAULT_EMAIL = Bun.env.TEST_DEFAULT_EMAIL || "";
 export const TEST_CREDENTIALS_EMAIL = Bun.env.TEST_CREDENTIALS_EMAIL || "";
 
+// Default admin user, seeded via `bun run db:default-user`.
+export const DEFAULT_USER_EMAIL = Bun.env.DEFAULT_USER_EMAIL || "";
+export const DEFAULT_USER_NAME = Bun.env.DEFAULT_USER_NAME || "Admin";
+
 export const DATABASE_URL =
   Bun.env.DATABASE_URL || "postgres://postgres:password@localhost:5432/db";
 
