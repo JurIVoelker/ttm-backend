@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { Resend } from "resend";
+import { render } from "@react-email/components";
 import "dotenv/config";
 import logger from "./logger";
 
@@ -29,12 +30,12 @@ export const sendEmail = async ({
 
   const resend = new Resend(RESEND_API_KEY);
   try {
+    const html = await render(Email({ ...data }) as React.ReactElement);
     await resend.emails.send({
-      from: RESEND_EMAIL_FROM || "",
+      from: RESEND_EMAIL_FROM,
       to,
       subject,
-      // @ts-expect-error
-      react: Email({ ...data }),
+      html,
     });
   } catch (err) {
     logger.error({ err, to }, "Failed to send email");
