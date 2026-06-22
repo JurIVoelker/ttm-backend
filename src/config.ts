@@ -60,9 +60,3 @@ if (!_metricsPassword && NODE_ENV === "production") {
   throw new Error("METRICS_PASSWORD is not set in production");
 }
 export const METRICS_PASSWORD = _metricsPassword || "metrics-dev-password";
-
-// Comma-separated extra IPs allowed to scrape /metrics (beyond localhost/private ranges).
-export const METRICS_ALLOWED_IPS = (Bun.env.METRICS_ALLOWED_IPS || "")
-  .split(",")
-  .map((ip) => ip.trim())
-  .filter(Boolean);

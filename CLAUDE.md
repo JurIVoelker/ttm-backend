@@ -63,7 +63,6 @@ Request → Controller (validate with Zod) → Service (business logic) → Pris
 | `TT_API_KEY` | External table tennis API |
 | `DISCORD_WEBHOOK_URL` | Discord notifications |
 | `METRICS_USER` / `METRICS_PASSWORD` | Basic auth for the Prometheus `/api/metrics` endpoint (`METRICS_PASSWORD` required in production) |
-| `METRICS_ALLOWED_IPS` | Comma-separated extra IPs allowed to scrape `/api/metrics` (beyond localhost/private ranges) |
 | `TEST_DEFAULT_EMAIL` / `TEST_CREDENTIALS_EMAIL` | Test helpers |
 
 ## User Roles
