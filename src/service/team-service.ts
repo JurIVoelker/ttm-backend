@@ -97,7 +97,18 @@ export class TeamService {
         { groupIndex: "asc" },
       ],
     });
-    return teams.map((team) => this.toDTO(team));
+
+    // Distinct (teamType, teamIndex) combos that have at least one "Meldung" (PlayerPosition)
+    const positionGroups = await prisma.playerPosition.groupBy({
+      by: ["teamType", "teamIndex"],
+    });
+    const meldungKeys = new Set(
+      positionGroups.map((g) => `${g.teamType}:${g.teamIndex}`),
+    );
+
+    return teams
+      .filter((team) => meldungKeys.has(`${team.type}:${team.groupIndex}`))
+      .map((team) => this.toDTO(team));
   }
 
   public async getTeamsWithPositions() {

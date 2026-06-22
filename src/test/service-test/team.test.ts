@@ -18,3 +18,27 @@ const teamService = new TeamService();
 const leaderService = new LeaderService();
 const authService = new AuthService();
 const playerService = new PlayerService();
+
+test("getTeams does not return teams with 0 Meldungen", async () => {
+  await teamService.create(defaultTeam);
+
+  const teams = await teamService.getTeams();
+
+  expect(teams).toHaveLength(0);
+});
+
+test("getTeams returns a team with Meldungen but no members added", async () => {
+  const team = await teamService.create(defaultTeam);
+  // Creating a player with a position registers a "Meldung" without adding the
+  // player to the team's members.
+  await playerService.create({
+    fullName: defaultPlayer.fullName,
+    position: 1,
+    teamSlug: team.slug,
+  });
+
+  const teams = await teamService.getTeams();
+
+  expect(teams).toHaveLength(1);
+  expect(teams[0].slug).toBe(team.slug);
+});
