@@ -8,7 +8,7 @@
     "db:seed": "bun --bun run src/scripts/dev/seed-db.ts",
     "db:default-user": "bun --bun run src/scripts/create-default-user.ts",
     "lint": "eslint",
-    "build:file": "bun --bun build src/entrypoint.ts --target=bun --compile --outfile=out/server --minify --sourcemap"
+    "build:file": "bun --bun run scripts/build.ts"
   },
   "dependencies": {
     "@hono/eslint-config": "^2.0.5",
