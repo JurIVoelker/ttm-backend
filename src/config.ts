@@ -52,3 +52,17 @@ export const DISCORD_WEBHOOK_URL = Bun.env.DISCORD_WEBHOOK_URL || "";
 if (!DISCORD_WEBHOOK_URL) {
   console.warn("DISCORD_WEBHOOK_URL is not set, Discord notifications will not work");
 }
+
+// Basic auth credentials for the Prometheus /metrics endpoint.
+export const METRICS_USER = Bun.env.METRICS_USER || "metrics";
+const _metricsPassword = Bun.env.METRICS_PASSWORD;
+if (!_metricsPassword && NODE_ENV === "production") {
+  throw new Error("METRICS_PASSWORD is not set in production");
+}
+export const METRICS_PASSWORD = _metricsPassword || "metrics-dev-password";
+
+// Comma-separated extra IPs allowed to scrape /metrics (beyond localhost/private ranges).
+export const METRICS_ALLOWED_IPS = (Bun.env.METRICS_ALLOWED_IPS || "")
+  .split(",")
+  .map((ip) => ip.trim())
+  .filter(Boolean);

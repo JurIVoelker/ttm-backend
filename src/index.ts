@@ -11,12 +11,15 @@ import { adminController } from "./controller/admin-controller";
 import { loggerMiddleware, getClientIp } from "./lib/logger";
 import logger from "./lib/logger";
 import { notificationController } from "./controller/notification-controller";
-import { FRONTEND_URL } from "./config";
+import { FRONTEND_URL, METRICS_USER, METRICS_PASSWORD } from "./config";
 import { rateLimiter } from "hono-rate-limiter";
 import { syncController } from "./controller/sync-controller";
+import { basicAuth } from "hono/basic-auth";
+import { registerMetrics, printMetrics, metricsIpAllowlist } from "./lib/metrics";
 
 export const app = new Hono().basePath("/api");
 app.use(loggerMiddleware);
+app.use(registerMetrics);
 
 app.use(
   "/*",
@@ -44,6 +47,12 @@ app.use(
 );
 
 app.get("/health", (c) => c.json({ status: "ok" }));
+app.get(
+  "/metrics",
+  metricsIpAllowlist,
+  basicAuth({ username: METRICS_USER, password: METRICS_PASSWORD }),
+  printMetrics,
+);
 app.route("/auth", authController);
 app.route("/", matchController);
 app.route("/", teamController);
