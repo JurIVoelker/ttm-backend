@@ -30,6 +30,17 @@ enum Availability {
   NOT_RESPONDED
 }
 
+enum SyncTrigger {
+  AUTO
+  MANUAL
+}
+
+enum SyncStatus {
+  COMPLETED
+  SKIPPED
+  FAILED
+}
+
 model Admin {
   id       String @id @default(cuid())
   email    String @unique
@@ -147,4 +158,18 @@ model Settings {
   id            String  @id @default(cuid())
   includeRRSync Boolean @default(false)
   autoSync      Boolean @default(false)
+}
+
+model SyncLog {
+  id                   String      @id @default(cuid())
+  createdAt            DateTime    @default(now())
+  trigger              SyncTrigger
+  status               SyncStatus
+  includeRRSync        Boolean
+  autoSync             Boolean
+  successfulSyncsCount Int         @default(0)
+  failedSyncsCount     Int         @default(0)
+  updatedMatchesCount  Int         @default(0)
+  details              Json?
+  error                String?
 }

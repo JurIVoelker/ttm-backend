@@ -8,6 +8,7 @@ import { romanToInt } from "../lib/roman";
 import { getTeamIndex, getTeamType } from "../lib/team";
 import { generateInviteToken } from "../lib/auth";
 import { NotificationService } from "./notification-service";
+import { SyncLogService, toMatchDetail } from "./sync-log-service";
 import { isRR, isRRMatch } from "../lib/match";
 
 const { TT_API_KEY } = process.env;
@@ -18,6 +19,7 @@ if (!TT_API_KEY) {
 
 export class SyncService {
   private notificationService: NotificationService = new NotificationService();
+  private syncLogService: SyncLogService = new SyncLogService();
 
   public async getData(includeIgnored = false) {
     let data: TTApiMatchesReturnType;
@@ -244,47 +246,80 @@ export class SyncService {
   }
 
   public async autoSync() {
-    const settings = await prisma.settings.findFirst();
-    if (settings?.autoSync === false) {
+    const settings = await this.getSettings();
+    if (settings.autoSync === false) {
       logger.info("Auto sync is disabled in settings, skipping auto sync");
+      await this.syncLogService.create({
+        trigger: "AUTO",
+        status: "SKIPPED",
+        includeRRSync: settings.includeRRSync,
+        autoSync: settings.autoSync,
+      });
       return;
     }
 
-    const changes = await this.getChanges();
-    const missingMatchesResult = await this.addMissingMatches(changes.missingMatches);
-    const updatedMatchesResult = await this.updateMatches([
-      ...changes.unequalTimeMatches,
-      ...changes.unequalHomeGameMatches,
-      ...changes.unequalLocationMatches
-    ]);
+    try {
+      const changes = await this.getChanges();
+      const missingMatchesResult = await this.addMissingMatches(changes.missingMatches);
+      const updatedMatchesResult = await this.updateMatches([
+        ...changes.unequalTimeMatches,
+        ...changes.unequalHomeGameMatches,
+        ...changes.unequalLocationMatches
+      ]);
 
-    let reportMessage =
-      `## Auto Sync Report (v1) ${format(new Date(), "yyyy-MM-dd HH:mm")}`;
+      await this.syncLogService.create({
+        trigger: "AUTO",
+        status: "COMPLETED",
+        includeRRSync: settings.includeRRSync,
+        autoSync: settings.autoSync,
+        successfulSyncsCount: missingMatchesResult.successfulSyncs.length,
+        failedSyncsCount: missingMatchesResult.failedSyncs.length,
+        updatedMatchesCount: updatedMatchesResult.length,
+        details: {
+          successfulSyncs: missingMatchesResult.successfulSyncs.map(toMatchDetail),
+          failedSyncs: missingMatchesResult.failedSyncs.map(toMatchDetail),
+          updatedMatches: updatedMatchesResult.map(toMatchDetail),
+        },
+      });
 
-    const successfulSyncsReport = `Successful syncs: ${missingMatchesResult.successfulSyncs.length}`;
-    const failedSyncsReport =
-      `Failed syncs: ${missingMatchesResult.failedSyncs.length}:
+      let reportMessage =
+        `## Auto Sync Report (v1) ${format(new Date(), "yyyy-MM-dd HH:mm")}`;
+
+      const successfulSyncsReport = `Successful syncs: ${missingMatchesResult.successfulSyncs.length}`;
+      const failedSyncsReport =
+        `Failed syncs: ${missingMatchesResult.failedSyncs.length}:
 ${missingMatchesResult.failedSyncs.slice(0, 10).map((match) => `- ${match.teams.home.name} vs ${match.teams.away.name} on ${format(new Date(match.datetime), "yyyy-MM-dd HH:mm")}`).join("\n")}
 ${missingMatchesResult.failedSyncs.length > 10 ? `...and ${missingMatchesResult.failedSyncs.length - 10} more` : ""}`;
 
-    const missingMatchesReport =
-      `### New Matches
+      const missingMatchesReport =
+        `### New Matches
 ${successfulSyncsReport}
 ${missingMatchesResult.failedSyncs.length > 0 ? failedSyncsReport : ""}`;
 
-    if (missingMatchesResult.successfulSyncs.length > 0 || missingMatchesResult.failedSyncs.length > 0) {
-      reportMessage += "\n" + missingMatchesReport;
-    }
+      if (missingMatchesResult.successfulSyncs.length > 0 || missingMatchesResult.failedSyncs.length > 0) {
+        reportMessage += "\n" + missingMatchesReport;
+      }
 
-    if (updatedMatchesResult.length > 0) {
-      reportMessage += `\n### Updated Matches: ${updatedMatchesResult.length}`;
-    }
+      if (updatedMatchesResult.length > 0) {
+        reportMessage += `\n### Updated Matches: ${updatedMatchesResult.length}`;
+      }
 
-    if (reportMessage === "## Auto Sync Report (v1)") {
-      reportMessage += "\nNo changes detected, no sync needed.";
-    }
+      if (reportMessage === "## Auto Sync Report (v1)") {
+        reportMessage += "\nNo changes detected, no sync needed.";
+      }
 
-    await this.notificationService.sendDiscordNotification(reportMessage);
+      await this.notificationService.sendDiscordNotification(reportMessage);
+    } catch (err) {
+      logger.error({ err }, "Auto sync failed");
+      await this.syncLogService.create({
+        trigger: "AUTO",
+        status: "FAILED",
+        includeRRSync: settings.includeRRSync,
+        autoSync: settings.autoSync,
+        error: String(err),
+      });
+      throw err;
+    }
   }
 
   public async ignoreMatches(ids: string[]) {
@@ -355,89 +390,132 @@ ${missingMatchesResult.failedSyncs.length > 0 ? failedSyncsReport : ""}`;
   }
 
   public async manualSync(ids: string[]) {
-    const matches = (await this.getData()).matches;
-    const filteredMatches = matches.filter((match) => ids.includes(match.id));
-    for (const match of filteredMatches) {
-      const existingMatch = await prisma.match.findUnique({
-        where: {
-          id: match.id,
-        },
-        include: {
-          team: true,
-        }
-      })
+    const settings = await this.getSettings();
+    const created: TTApiMatch[] = [];
+    const updated: TTApiMatch[] = [];
+    const skipped: TTApiMatch[] = [];
 
-      let team = existingMatch && existingMatch.team ? existingMatch.team : null;
-      if (!existingMatch) {
-        team = await prisma.team.findUnique({
-          where: {
-            slug: slugify(match.isHomeGame ? match.teams.home.name : match.teams.away.name),
-          }
-        })
-      }
-      if (!team) {
-        const teamName = match.isHomeGame ? match.teams.home.name : match.teams.away.name;
-        const splitTeamName = teamName.split(" ");
-        const teamIndex = romanToInt(splitTeamName[splitTeamName.length - 1]);
-        const teamType = getTeamType(teamName);
-
-        if (teamType === undefined || teamIndex === undefined) {
-          logger.warn({ teamName }, "Could not determine team type or index, skipping match sync");
-          continue;
-        }
-
-        team = await prisma.team.create({
-          data: {
-            name: teamName,
-            slug: slugify(teamName),
-            type: teamType,
-            groupIndex: teamIndex,
-            inviteToken: generateInviteToken(),
-          }
-        })
-
-        logger.info({ teamName, teamIndex, teamType }, "Created missing team in database");
-      }
-
-      const newLocation = {
-        city: match.location.address.city + " " + match.location.address.zip,
-        streetAddress: match.location.address.street,
-        hallName: match.location.name,
-      }
-
-      if (!existingMatch) {
-        await prisma.match.create({
-          data: {
-            id: match.id,
-            time: new Date(match.datetime),
-            isHomeGame: match.isHomeGame,
-            teamSlug: slugify(match.isHomeGame ? match.teams.home.name : match.teams.away.name),
-            enemyName: match.isHomeGame ? match.teams.away.name : match.teams.home.name,
-            location: {
-              create: newLocation,
-            },
-            type: match.league.name.toLowerCase().includes("pokal") ? "CUP" : "REGULAR",
-          }
-        })
-        logger.info({ matchId: match.id, time: format(new Date(match.datetime), "yyyy-MM-dd HH:mm") }, "Added missing match to database");
-      } else {
-        await prisma.match.update({
+    try {
+      const matches = (await this.getData()).matches;
+      const filteredMatches = matches.filter((match) => ids.includes(match.id));
+      for (const match of filteredMatches) {
+        const existingMatch = await prisma.match.findUnique({
           where: {
             id: match.id,
           },
-          data: {
-            isHomeGame: match.isHomeGame,
-            time: new Date(match.datetime),
-            location: {
-              upsert: {
-                create: newLocation,
-                update: newLocation,
-              }
-            }
+          include: {
+            team: true,
           }
         })
-        logger.info({ matchId: match.id, time: format(new Date(match.datetime), "yyyy-MM-dd HH:mm") }, "Updated existing match in database");
+
+        let team = existingMatch && existingMatch.team ? existingMatch.team : null;
+        if (!existingMatch) {
+          team = await prisma.team.findUnique({
+            where: {
+              slug: slugify(match.isHomeGame ? match.teams.home.name : match.teams.away.name),
+            }
+          })
+        }
+        if (!team) {
+          const teamName = match.isHomeGame ? match.teams.home.name : match.teams.away.name;
+          const splitTeamName = teamName.split(" ");
+          const teamIndex = romanToInt(splitTeamName[splitTeamName.length - 1]);
+          const teamType = getTeamType(teamName);
+
+          if (teamType === undefined || teamIndex === undefined) {
+            logger.warn({ teamName }, "Could not determine team type or index, skipping match sync");
+            skipped.push(match);
+            continue;
+          }
+
+          team = await prisma.team.create({
+            data: {
+              name: teamName,
+              slug: slugify(teamName),
+              type: teamType,
+              groupIndex: teamIndex,
+              inviteToken: generateInviteToken(),
+            }
+          })
+
+          logger.info({ teamName, teamIndex, teamType }, "Created missing team in database");
+        }
+
+        const newLocation = {
+          city: match.location.address.city + " " + match.location.address.zip,
+          streetAddress: match.location.address.street,
+          hallName: match.location.name,
+        }
+
+        if (!existingMatch) {
+          await prisma.match.create({
+            data: {
+              id: match.id,
+              time: new Date(match.datetime),
+              isHomeGame: match.isHomeGame,
+              teamSlug: slugify(match.isHomeGame ? match.teams.home.name : match.teams.away.name),
+              enemyName: match.isHomeGame ? match.teams.away.name : match.teams.home.name,
+              location: {
+                create: newLocation,
+              },
+              type: match.league.name.toLowerCase().includes("pokal") ? "CUP" : "REGULAR",
+            }
+          })
+          logger.info({ matchId: match.id, time: format(new Date(match.datetime), "yyyy-MM-dd HH:mm") }, "Added missing match to database");
+          created.push(match);
+        } else {
+          await prisma.match.update({
+            where: {
+              id: match.id,
+            },
+            data: {
+              isHomeGame: match.isHomeGame,
+              time: new Date(match.datetime),
+              location: {
+                upsert: {
+                  create: newLocation,
+                  update: newLocation,
+                }
+              }
+            }
+          })
+          logger.info({ matchId: match.id, time: format(new Date(match.datetime), "yyyy-MM-dd HH:mm") }, "Updated existing match in database");
+          updated.push(match);
+        }
       }
+
+      await this.syncLogService.create({
+        trigger: "MANUAL",
+        status: "COMPLETED",
+        includeRRSync: settings.includeRRSync,
+        autoSync: settings.autoSync,
+        successfulSyncsCount: created.length,
+        failedSyncsCount: skipped.length,
+        updatedMatchesCount: updated.length,
+        details: {
+          successfulSyncs: created.map(toMatchDetail),
+          failedSyncs: skipped.map(toMatchDetail),
+          updatedMatches: updated.map(toMatchDetail),
+        },
+      });
+    } catch (err) {
+      logger.error({ err }, "Manual sync failed");
+      await this.syncLogService.create({
+        trigger: "MANUAL",
+        status: "FAILED",
+        includeRRSync: settings.includeRRSync,
+        autoSync: settings.autoSync,
+        successfulSyncsCount: created.length,
+        failedSyncsCount: skipped.length,
+        updatedMatchesCount: updated.length,
+        details: {
+          successfulSyncs: created.map(toMatchDetail),
+          failedSyncs: skipped.map(toMatchDetail),
+          updatedMatches: updated.map(toMatchDetail),
+        },
+        error: String(err),
+      });
+      throw err;
     }
   }
 }

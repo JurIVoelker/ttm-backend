@@ -6,6 +6,7 @@ import { LeaderService } from "../../service/leader-service";
 import { MatchService } from "../../service/match-service";
 import { PlayerService } from "../../service/player-service";
 import { TeamService } from "../../service/team-service";
+import { seedSyncLogs } from "./seed-sync-logs";
 import {
   defaultPlayer,
   defaultTeam,
@@ -120,6 +121,8 @@ const matchService = new MatchService();
     playerId: player.id,
     teamSlug: defaultPlayer.teamSlug,
   });
+
+  await seedSyncLogs();
 
   console.log("Database seeded.");
   process.exit(0);

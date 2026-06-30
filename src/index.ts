@@ -14,6 +14,7 @@ import { notificationController } from "./controller/notification-controller";
 import { FRONTEND_URL, METRICS_USER, METRICS_PASSWORD } from "./config";
 import { rateLimiter } from "hono-rate-limiter";
 import { syncController } from "./controller/sync-controller";
+import { syncLogController } from "./controller/sync-log-controller";
 import { basicAuth } from "hono/basic-auth";
 import { prometheus } from "@hono/prometheus";
 
@@ -62,6 +63,7 @@ app.route("/", leaderController);
 app.route("/", playerController);
 app.route("/", adminController);
 app.route("/", notificationController);
+app.route("/", syncLogController);
 app.route("/", syncController);
 
 

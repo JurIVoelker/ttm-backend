@@ -10,6 +10,7 @@ export const dropAll = async () => {
   await prisma.player.deleteMany();
   await prisma.playerPosition.deleteMany();
   await prisma.settings.deleteMany();
+  await prisma.syncLog.deleteMany();
   await prisma.team.deleteMany();
   await prisma.teamLeader.deleteMany();
   await prisma.userCredentials.deleteMany();
